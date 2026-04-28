@@ -14,9 +14,11 @@ export function currentWorkerLoads(workers: Worker[]): Map<number, number> {
 
 // Pull policy: worker may pull if their load is NOT strictly the highest in the team.
 // Tie for highest is OK; only the unique max cannot pull.
+// Single-worker team has no peers, so the policy is vacuous and the worker always can pull.
 export function workerCanPull(workers: Worker[], workerId: number): boolean {
   const myWorker = workers.find((w) => w.id === workerId);
   if (!myWorker) return false;
+  if (workers.length <= 1) return true;
   const myLoad = myWorker.active_item_ids.length;
   let strictlyHigherCount = 0;
   let tiedAtMyLoadCount = 0;

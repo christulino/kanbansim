@@ -52,6 +52,11 @@ describe("board helpers", () => {
     expect(workerCanPull(workers, 1)).toBe(true);
   });
 
+  it("workerCanPull is true on a single-worker team (no peers to compare)", () => {
+    const workers: Worker[] = [{ id: 1, active_item_ids: [1, 2, 3, 4], last_chosen_item_id: null }];
+    expect(workerCanPull(workers, 1)).toBe(true);
+  });
+
   it("currentWorkerLoads returns map of worker id to active count", () => {
     const workers: Worker[] = [
       { id: 1, active_item_ids: [1, 2], last_chosen_item_id: null },
