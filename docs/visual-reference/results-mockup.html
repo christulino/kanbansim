@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KanbanSim — Results (v3: Mobile-fixed)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&family=Caveat:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #FAF6EC;
+    --bg-paper: #F4EEDC;
+    --bg-deep: #EBE3CC;
+    --grid: rgba(42, 31, 26, 0.07);
+    --grid-deep: rgba(42, 31, 26, 0.14);
+    --text: #2A1F1A;
+    --text-soft: #6B5D52;
+    --text-faint: #9A8A7A;
+    --accent: #1F6F6B;
+    --accent-deep: #134341;
+    --accent-soft: rgba(31, 111, 107, 0.10);
+    --warning: #C44834;
+    --warning-soft: rgba(196, 72, 52, 0.10);
+    --series-1: #1F6F6B;
+    --series-2: #C44834;
+    --series-3: #C99A3A;
+    --series-4: #6B7BA4;
+    --rule: rgba(42, 31, 26, 0.18);
+    --rule-soft: rgba(42, 31, 26, 0.10);
+    --serif: 'Fraunces', Georgia, 'Times New Roman', serif;
+    --sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    --mono: 'JetBrains Mono', 'Menlo', monospace;
+    --hand: 'Caveat', cursive;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; min-width: 0; }
+  html, body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 14px;
+    line-height: 1.55;
+    background-image:
+      linear-gradient(var(--grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 22px 22px;
+    overflow-x: hidden;
+  }
+  body { padding-bottom: 80px; }
+
+  /* HEADER */
+  header.topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 40px;
+    border-bottom: 1px solid var(--rule);
+    background: var(--bg);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .brand { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .brand-mark {
+    font-family: var(--serif);
+    font-weight: 600;
+    font-size: 23px;
+    letter-spacing: -0.018em;
+  }
+  .brand-tag {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-soft);
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    padding-bottom: 3px;
+  }
+  nav.primary {
+    display: flex;
+    gap: 28px;
+    font-size: 13px;
+    flex-wrap: wrap;
+  }
+  nav.primary a { color: var(--text-soft); text-decoration: none; padding-bottom: 3px; }
+  nav.primary a.active { color: var(--text); font-weight: 500; border-bottom: 1.5px solid var(--text); }
+  .header-right { display: flex; align-items: center; gap: 14px; }
+  .theme-toggle {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-soft);
+    background: transparent;
+    border: 1px solid var(--rule);
+    padding: 5px 10px;
+    border-radius: 3px;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  /* PAGE */
+  main.page {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 36px 40px 0;
+  }
+
+  /* TITLE BLOCK */
+  .pagehead {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    border-bottom: 1px solid var(--rule);
+    padding-bottom: 22px;
+    margin-bottom: 28px;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+  .pagehead .titles { flex: 1 1 320px; min-width: 0; }
+  .pagehead .label {
+    font-family: var(--mono);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: var(--text-soft);
+    margin-bottom: 8px;
+  }
+  .pagehead h1 {
+    font-family: var(--serif);
+    font-weight: 500;
+    font-size: clamp(26px, 4.5vw, 40px);
+    letter-spacing: -0.02em;
+    line-height: 1.05;
+    overflow-wrap: anywhere;
+  }
+  .pagehead h1 em { font-style: italic; color: var(--accent); font-weight: 500; }
+  .pagehead .meta {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-soft);
+    text-align: right;
+    line-height: 1.7;
+    flex: 0 0 auto;
+  }
+  .pagehead .meta .key { color: var(--text-faint); }
+  .stamp {
+    display: inline-block;
+    border: 1.5px solid var(--accent);
+    color: var(--accent);
+    padding: 5px 11px;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    transform: rotate(-1.8deg);
+    border-radius: 2px;
+    font-weight: 500;
+  }
+
+  /* CONFIG STRIP — auto-fit columns */
+  .config-strip {
+    background: var(--bg-paper);
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    padding: 18px 28px 20px;
+    margin-bottom: 28px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 24px 28px;
+  }
+  .config-strip .group-title {
+    font-family: var(--mono);
+    font-size: 9.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: var(--text-faint);
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--rule-soft);
+  }
+  .config-strip dl {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 6px 14px;
+    font-size: 12.5px;
+    align-items: baseline;
+  }
+  .config-strip dt { color: var(--text-soft); overflow-wrap: anywhere; }
+  .config-strip dd {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--text);
+    text-align: right;
+    font-weight: 500;
+  }
+  .swept {
+    background: var(--accent-soft);
+    color: var(--accent);
+    padding: 1.5px 7px;
+    border-radius: 2px;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  .randomized {
+    background: var(--warning-soft);
+    color: var(--warning);
+    padding: 1.5px 7px;
+    border-radius: 2px;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+
+  /* CHART CARDS */
+  .card {
+    background: var(--bg-paper);
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    padding: 26px 32px 24px;
+    position: relative;
+    box-shadow: 0 1px 0 rgba(42,31,26,0.04);
+    margin-bottom: 28px;
+    overflow: hidden;
+  }
+  .card .label {
+    font-family: var(--mono);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: var(--text-soft);
+    margin-bottom: 6px;
+  }
+  .card h2 {
+    font-family: var(--serif);
+    font-weight: 500;
+    font-size: clamp(20px, 2.4vw, 26px);
+    letter-spacing: -0.014em;
+    line-height: 1.15;
+    margin-bottom: 4px;
+    overflow-wrap: anywhere;
+  }
+  .card .chart-subtitle {
+    font-size: 13px;
+    color: var(--text-soft);
+    margin-bottom: 18px;
+    max-width: 70ch;
+  }
+
+  .chart-svg-wrap { width: 100%; overflow: hidden; }
+  .chart-svg {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+  .chart-svg .axis-line { stroke: var(--rule); stroke-width: 1; }
+  .chart-svg .grid-line { stroke: var(--rule-soft); stroke-width: 1; stroke-dasharray: 2 4; }
+  .chart-svg .tick-text {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    fill: var(--text-soft);
+  }
+  .chart-svg .axis-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    fill: var(--text-soft);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+  }
+  .chart-svg .series-label {
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+  }
+  .chart-svg .annotation {
+    font-family: 'Caveat', cursive;
+    font-size: 20px;
+    fill: var(--accent);
+  }
+
+  .caption {
+    font-family: var(--serif);
+    font-style: italic;
+    color: var(--text-soft);
+    font-size: 14px;
+    line-height: 1.55;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--rule-soft);
+    max-width: 80ch;
+  }
+
+  /* HISTOGRAM */
+  .hist-bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 3px;
+    height: 240px;
+    padding-top: 8px;
+  }
+  .hist-bar {
+    flex: 1 1 0;
+    min-width: 0;
+    background: var(--accent);
+    opacity: 0.85;
+    border-radius: 2px 2px 0 0;
+    min-height: 2px;
+  }
+  .hist-axis {
+    display: flex;
+    justify-content: space-between;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-soft);
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid var(--rule-soft);
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .hist-stats {
+    display: flex;
+    gap: 28px;
+    margin-top: 16px;
+    font-family: var(--mono);
+    flex-wrap: wrap;
+  }
+  .hist-stats .stat .key {
+    color: var(--text-faint);
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    font-size: 10px;
+    margin-bottom: 3px;
+  }
+  .hist-stats .stat .val {
+    color: var(--text);
+    font-weight: 600;
+    font-size: 18px;
+  }
+
+  /* TIME ACCOUNTING */
+  .time-row { margin-bottom: 16px; }
+  .time-row .row-head {
+    display: flex;
+    justify-content: space-between;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-soft);
+    margin-bottom: 5px;
+    flex-wrap: wrap;
+    gap: 6px 14px;
+  }
+  .time-row .row-label {
+    font-family: var(--sans);
+    font-size: 13px;
+    color: var(--text);
+    font-weight: 500;
+  }
+  .time-bar {
+    display: flex;
+    height: 32px;
+    border-radius: 3px;
+    overflow: hidden;
+    background: var(--bg-deep);
+    position: relative;
+  }
+  .time-segment {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255,255,255,0.95);
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 500;
+    overflow: hidden;
+    white-space: nowrap;
+    min-width: 0;
+  }
+  .time-legend {
+    display: flex;
+    gap: 18px 22px;
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--rule-soft);
+    font-family: var(--sans);
+    font-size: 12px;
+    color: var(--text-soft);
+    flex-wrap: wrap;
+  }
+  .time-legend .swatch {
+    display: inline-block;
+    width: 11px;
+    height: 11px;
+    border-radius: 1.5px;
+    margin-right: 6px;
+    vertical-align: -1px;
+  }
+
+  /* CFD */
+  .cfd-svg { width: 100%; height: 280px; display: block; }
+  .cfd-legend {
+    display: flex;
+    gap: 16px 22px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--rule-soft);
+    font-family: var(--sans);
+    font-size: 12px;
+    color: var(--text-soft);
+    flex-wrap: wrap;
+  }
+
+  /* ACTIONS */
+  .actions-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 24px;
+    border-top: 1px solid var(--rule);
+    margin-top: 8px;
+    flex-wrap: wrap;
+    gap: 14px;
+  }
+  .actions-bar .left { display: flex; gap: 10px; flex-wrap: wrap; }
+  .actions-bar .right { display: flex; gap: 10px; flex-wrap: wrap; }
+  .btn {
+    font-family: var(--sans);
+    font-size: 13px;
+    padding: 10px 16px;
+    border-radius: 3px;
+    border: 1px solid var(--rule);
+    background: transparent;
+    color: var(--text);
+    cursor: pointer;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  .btn:hover { background: var(--bg-paper); }
+  .btn-primary {
+    background: var(--accent);
+    color: #FAF6EC;
+    border-color: var(--accent);
+  }
+  .btn-primary:hover { background: var(--accent-deep); }
+  .btn .icon { font-family: var(--mono); margin-right: 6px; }
+
+  /* ===== RESPONSIVE BREAKPOINTS ===== */
+  @media (max-width: 760px) {
+    html, body {
+      background-size: 16px 16px;
+      font-size: 13.5px;
+    }
+    header.topbar { padding: 12px 18px; }
+    nav.primary { gap: 18px; font-size: 12.5px; order: 3; flex-basis: 100%; }
+    .brand-tag { display: none; }
+    main.page { padding: 22px 18px 0; }
+    .pagehead {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 14px;
+      padding-bottom: 18px;
+      margin-bottom: 22px;
+    }
+    .pagehead .titles {
+      flex: 0 0 auto;
+      width: 100%;
+    }
+    .pagehead .meta {
+      text-align: left;
+      width: 100%;
+    }
+    .stamp { transform: rotate(-1.5deg); }
+    .config-strip {
+      padding: 16px 18px 18px;
+      gap: 18px 22px;
+      grid-template-columns: 1fr;
+    }
+    .card { padding: 20px 18px 18px; }
+    .card h2 { font-size: 20px; }
+    .card .chart-subtitle { font-size: 12.5px; max-width: none; }
+    .caption { font-size: 13px; max-width: none; }
+    .hist-bars { height: 180px; gap: 2px; }
+    .hist-stats { gap: 18px 22px; }
+    .hist-stats .stat .val { font-size: 16px; }
+    .cfd-svg { height: 200px; }
+    .time-bar { height: 28px; }
+    .time-segment { font-size: 10px; }
+    .actions-bar { flex-direction: column; align-items: stretch; }
+    .actions-bar .left, .actions-bar .right { justify-content: center; }
+    .btn { padding: 10px 14px; font-size: 12.5px; }
+  }
+
+  @media (max-width: 460px) {
+    nav.primary { gap: 14px; }
+    .pagehead h1 { font-size: 24px; }
+    .config-strip { gap: 16px; }
+    .hist-bars { height: 140px; }
+    .hist-stats { gap: 14px 18px; }
+    .hist-stats .stat .val { font-size: 15px; }
+    .cfd-svg { height: 170px; }
+    .time-bar { height: 26px; }
+    .time-segment { font-size: 9.5px; }
+    .actions-bar .left, .actions-bar .right { flex-direction: column; }
+    .btn { width: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <div class="brand-mark">KanbanSim</div>
+    <div class="brand-tag">Flow Lab · v0.1</div>
+  </div>
+  <nav class="primary">
+    <a href="#">Build</a>
+    <a href="#">Run</a>
+    <a href="#" class="active">Results</a>
+    <a href="#">Learn</a>
+  </nav>
+  <div class="header-right">
+    <button class="theme-toggle">◐ Lab Mode</button>
+  </div>
+</header>
+
+<main class="page">
+
+  <div class="pagehead">
+    <div class="titles">
+      <div class="label">Experiment Results</div>
+      <h1>The <em>WIP-Limit Sweet Spot</em></h1>
+    </div>
+    <div class="meta">
+      <div class="stamp">Run Complete</div>
+      <div><span class="key">runs</span> &nbsp;10,000</div>
+      <div><span class="key">simulated</span> &nbsp;6 months</div>
+      <div><span class="key">elapsed</span> &nbsp;2 min 34 sec</div>
+      <div><span class="key">seed</span> &nbsp;0x4F7A2C</div>
+    </div>
+  </div>
+
+  <!-- CONFIG STRIP -->
+  <div class="config-strip">
+    <div>
+      <div class="group-title">Team</div>
+      <dl>
+        <dt>Size</dt><dd>5</dd>
+        <dt>Productive hrs/day</dt><dd>6.0</dd>
+        <dt>Switch cost</dt><dd>15 min</dd>
+        <dt>Pace penalty</dt><dd>5%/extra</dd>
+      </dl>
+    </div>
+    <div>
+      <div class="group-title">Work Items</div>
+      <dl>
+        <dt>Arrival rate</dt><dd>4.0/day</dd>
+        <dt>Effort μ</dt><dd>8.0 hrs</dd>
+        <dt>Effort σ</dt><dd><span class="randomized">3.5 hrs</span></dd>
+        <dt>Effort skew</dt><dd>+1.2</dd>
+        <dt>Block prob.</dt><dd>0.04 / day</dd>
+      </dl>
+    </div>
+    <div>
+      <div class="group-title">Board</div>
+      <dl>
+        <dt>Ready WIP</dt><dd>—</dd>
+        <dt>In Progress WIP</dt><dd><span class="swept">1 → 15</span></dd>
+        <dt>Validation WIP</dt><dd>3</dd>
+        <dt>Blocked policy</dt><dd>start_new</dd>
+      </dl>
+    </div>
+    <div>
+      <div class="group-title">Monte Carlo</div>
+      <dl>
+        <dt>Runs</dt><dd>10,000</dd>
+        <dt>Sweep variable</dt><dd>WIP (15)</dd>
+        <dt>Randomized vars</dt><dd>1</dd>
+        <dt>Distribution</dt><dd>log-normal</dd>
+      </dl>
+    </div>
+  </div>
+
+  <!-- HERO CHART -->
+  <div class="card">
+    <div class="label">Hero · Sweep Result</div>
+    <h2>Lead Time &amp; Throughput vs. WIP Limit</h2>
+    <div class="chart-subtitle">In Progress WIP swept from 1 to 15. Bands = 5th–95th percentile across 10,000 runs.</div>
+
+    <div class="chart-svg-wrap">
+      <svg class="chart-svg" viewBox="0 0 1180 400" preserveAspectRatio="xMidYMid meet">
+        <line class="grid-line" x1="80" y1="80" x2="1100" y2="80"/>
+        <line class="grid-line" x1="80" y1="150" x2="1100" y2="150"/>
+        <line class="grid-line" x1="80" y1="220" x2="1100" y2="220"/>
+        <line class="grid-line" x1="80" y1="290" x2="1100" y2="290"/>
+
+        <rect x="298" y="30" width="294" height="310" fill="#1F6F6B" opacity="0.07"/>
+
+        <path d="M 80,82.86 L 152.86,184.29 L 225.71,235.71 L 298.57,257.14 L 371.43,265.71 L 444.29,261.43 L 517.14,248.57 L 590,235.71 L 662.86,214.29 L 735.71,188.57 L 808.57,158.57 L 881.43,124.29 L 954.29,90 L 1027.14,55.71 L 1100,21.43 L 1100,107.14 L 1027.14,132.86 L 954.29,158.57 L 881.43,184.29 L 808.57,210 L 735.71,231.43 L 662.86,248.57 L 590,261.43 L 517.14,274.29 L 444.29,278.57 L 371.43,282.86 L 298.57,282.86 L 225.71,270 L 152.86,235.71 L 80,167.14 Z"
+              fill="#C44834" opacity="0.15"/>
+
+        <path d="M 80,278.57 L 152.86,231.43 L 225.71,182.86 L 298.57,148.57 L 371.43,130 L 444.29,121.43 L 517.14,125.71 L 590,130 L 662.86,137.14 L 735.71,148.57 L 808.57,158.57 L 881.43,170 L 954.29,182.86 L 1027.14,194.29 L 1100,205.71 L 1100,228.57 L 1027.14,217.14 L 954.29,210 L 881.43,200 L 808.57,188.57 L 735.71,177.14 L 662.86,165.71 L 590,158.57 L 517.14,154.29 L 444.29,147.14 L 371.43,154.29 L 298.57,170 L 225.71,205.71 L 152.86,247.14 L 80,288.57 Z"
+              fill="#1F6F6B" opacity="0.15"/>
+
+        <path d="M 80,124.29 L 152.86,210 L 225.71,252.86 L 298.57,270 L 371.43,274.29 L 444.29,270 L 517.14,261.43 L 590,248.57 L 662.86,231.43 L 735.71,210 L 808.57,184.29 L 881.43,154.29 L 954.29,124.29 L 1027.14,94.29 L 1100,64.29"
+              fill="none" stroke="#C44834" stroke-width="2.5" stroke-linejoin="round"/>
+
+        <path d="M 80,283.57 L 152.86,238.57 L 225.71,193.57 L 298.57,159.71 L 371.43,140.71 L 444.29,133.21 L 517.14,137.93 L 590,140.71 L 662.86,148.21 L 735.71,159.71 L 808.57,170.93 L 881.43,182.18 L 954.29,193.57 L 1027.14,204.93 L 1100,216.43"
+              fill="none" stroke="#1F6F6B" stroke-width="2.5" stroke-linejoin="round"/>
+
+        <g fill="#C44834">
+          <circle cx="80" cy="124.29" r="3"/><circle cx="152.86" cy="210" r="3"/><circle cx="225.71" cy="252.86" r="3"/><circle cx="298.57" cy="270" r="3"/><circle cx="371.43" cy="274.29" r="3"/><circle cx="444.29" cy="270" r="3"/><circle cx="517.14" cy="261.43" r="3"/><circle cx="590" cy="248.57" r="3"/><circle cx="662.86" cy="231.43" r="3"/><circle cx="735.71" cy="210" r="3"/><circle cx="808.57" cy="184.29" r="3"/><circle cx="881.43" cy="154.29" r="3"/><circle cx="954.29" cy="124.29" r="3"/><circle cx="1027.14" cy="94.29" r="3"/><circle cx="1100" cy="64.29" r="3"/>
+        </g>
+        <g fill="#1F6F6B">
+          <circle cx="80" cy="283.57" r="3"/><circle cx="152.86" cy="238.57" r="3"/><circle cx="225.71" cy="193.57" r="3"/><circle cx="298.57" cy="159.71" r="3"/><circle cx="371.43" cy="140.71" r="3"/><circle cx="444.29" cy="133.21" r="3"/><circle cx="517.14" cy="137.93" r="3"/><circle cx="590" cy="140.71" r="3"/><circle cx="662.86" cy="148.21" r="3"/><circle cx="735.71" cy="159.71" r="3"/><circle cx="808.57" cy="170.93" r="3"/><circle cx="881.43" cy="182.18" r="3"/><circle cx="954.29" cy="193.57" r="3"/><circle cx="1027.14" cy="204.93" r="3"/><circle cx="1100" cy="216.43" r="3"/>
+        </g>
+
+        <path d="M 478 60 Q 460 90 425 130" fill="none" stroke="#1F6F6B" stroke-width="1.5" opacity="0.7" stroke-linecap="round"/>
+        <polygon points="425,130 432,124 423,121" fill="#1F6F6B" opacity="0.7"/>
+        <text class="annotation" x="480" y="55">optimal WIP ≈ 5</text>
+        <text class="annotation" x="480" y="76" style="font-size: 16px; fill: #6B5D52;">throughput plateaus, lead time bottoms out</text>
+
+        <text class="annotation" x="950" y="48" style="fill: #C44834;">the cliff →</text>
+        <path d="M 1010 50 Q 1040 65 1060 85" fill="none" stroke="#C44834" stroke-width="1.5" opacity="0.7" stroke-linecap="round"/>
+        <polygon points="1060,85 1054,80 1051,87" fill="#C44834" opacity="0.7"/>
+
+        <text class="annotation" x="100" y="340" style="fill: #6B5D52; font-size: 16px;">starved team — workers idle on blockers ↓</text>
+
+        <line class="axis-line" x1="80" y1="30" x2="80" y2="340"/>
+        <line class="axis-line" x1="1100" y1="30" x2="1100" y2="340"/>
+        <line class="axis-line" x1="80" y1="340" x2="1100" y2="340"/>
+
+        <text class="tick-text" x="72" y="344" text-anchor="end">0</text>
+        <text class="tick-text" x="72" y="294" text-anchor="end">10</text>
+        <text class="tick-text" x="72" y="224" text-anchor="end">30</text>
+        <text class="tick-text" x="72" y="154" text-anchor="end">50</text>
+        <text class="tick-text" x="72" y="84" text-anchor="end">70</text>
+        <text class="axis-label" x="22" y="190" transform="rotate(-90 22 190)" text-anchor="middle">Lead time (days)</text>
+
+        <text class="tick-text" x="1108" y="344">0</text>
+        <text class="tick-text" x="1108" y="294">1</text>
+        <text class="tick-text" x="1108" y="224">3</text>
+        <text class="tick-text" x="1108" y="154">5</text>
+        <text class="tick-text" x="1108" y="84">7</text>
+        <text class="axis-label" x="1156" y="190" transform="rotate(90 1156 190)" text-anchor="middle">Throughput (items/day)</text>
+
+        <text class="tick-text" x="80" y="358" text-anchor="middle">1</text>
+        <text class="tick-text" x="225.71" y="358" text-anchor="middle">3</text>
+        <text class="tick-text" x="371.43" y="358" text-anchor="middle">5</text>
+        <text class="tick-text" x="517.14" y="358" text-anchor="middle">7</text>
+        <text class="tick-text" x="662.86" y="358" text-anchor="middle">9</text>
+        <text class="tick-text" x="808.57" y="358" text-anchor="middle">11</text>
+        <text class="tick-text" x="954.29" y="358" text-anchor="middle">13</text>
+        <text class="tick-text" x="1100" y="358" text-anchor="middle">15</text>
+        <text class="axis-label" x="590" y="385" text-anchor="middle">In-Progress WIP Limit</text>
+
+        <circle cx="1027.14" cy="94.29" r="5" fill="none" stroke="#C44834" stroke-width="1.5"/>
+        <text class="series-label" x="1035" y="88" fill="#C44834">Lead Time</text>
+        <circle cx="444.29" cy="133.21" r="5" fill="none" stroke="#1F6F6B" stroke-width="1.5"/>
+        <text class="series-label" x="452" y="125" fill="#1F6F6B">Throughput</text>
+      </svg>
+    </div>
+
+    <div class="caption">A clean U-curve. Below WIP ≈ 4, the team is starved — workers idle when items block, and throughput suffers. Above WIP ≈ 8, multitasking tax dominates and lead time blows up. The cliff is real, the floor is real, and the sweet spot is broader than most teams assume — that's the manager's permission to experiment.</div>
+  </div>
+
+  <!-- CFD -->
+  <div class="card">
+    <div class="label">Single Run · 6 months</div>
+    <h2>Cumulative Flow</h2>
+    <div class="chart-subtitle">A representative run at WIP=5. Each band is one column on the board, stacked. Watch the bands stay parallel — that's stable flow.</div>
+
+    <svg class="cfd-svg" viewBox="0 0 1180 280" preserveAspectRatio="none">
+      <path d="M 0,280 L 0,278 L 80,275 L 160,267 L 240,254 L 320,237 L 400,217 L 480,193 L 560,167 L 640,141 L 720,115 L 800,90 L 880,68 L 960,49 L 1040,33 L 1100,22 L 1180,16 L 1180,280 Z" fill="#1F6F6B" opacity="0.85"/>
+      <path d="M 0,278 L 80,272 L 160,261 L 240,245 L 320,225 L 400,201 L 480,174 L 560,145 L 640,114 L 720,84 L 800,55 L 880,28 L 960,7 L 1040,-7 L 1100,-15 L 1180,-19 L 1180,16 L 1100,22 L 1040,33 L 960,49 L 880,68 L 800,90 L 720,115 L 640,141 L 560,167 L 480,193 L 400,217 L 320,237 L 240,254 L 160,267 L 80,275 L 0,278 Z" fill="#C99A3A" opacity="0.78"/>
+      <path d="M 0,272 L 80,265 L 160,251 L 240,232 L 320,210 L 400,184 L 480,154 L 560,121 L 640,87 L 720,55 L 800,25 L 880,-2 L 960,-22 L 1040,-34 L 1100,-40 L 1180,-43 L 1180,-19 L 1100,-15 L 1040,-7 L 960,7 L 880,28 L 800,55 L 720,84 L 640,114 L 560,145 L 480,174 L 400,201 L 320,225 L 240,245 L 160,261 L 80,272 L 0,272 Z" fill="#C44834" opacity="0.7"/>
+      <path d="M 0,265 L 80,256 L 160,242 L 240,222 L 320,196 L 400,165 L 480,131 L 560,95 L 640,57 L 720,21 L 800,-12 L 880,-40 L 960,-60 L 1040,-72 L 1100,-77 L 1180,-80 L 1180,-43 L 1100,-40 L 1040,-34 L 960,-22 L 880,-2 L 800,25 L 720,55 L 640,87 L 560,121 L 480,154 L 400,184 L 320,210 L 240,232 L 160,251 L 80,265 L 0,265 Z" fill="#6B7BA4" opacity="0.65"/>
+    </svg>
+
+    <div class="hist-axis" style="border-top: none; padding-top: 8px;">
+      <span>day 1</span>
+      <span>day 30</span>
+      <span>day 60</span>
+      <span>day 90</span>
+      <span>day 120</span>
+      <span>day 150</span>
+      <span>day 180</span>
+    </div>
+
+    <div class="cfd-legend">
+      <span><span style="display:inline-block; width:11px; height:11px; background:#1F6F6B; border-radius:1.5px; margin-right:6px; vertical-align:-1px;"></span>Done</span>
+      <span><span style="display:inline-block; width:11px; height:11px; background:#C99A3A; border-radius:1.5px; margin-right:6px; vertical-align:-1px;"></span>Validation</span>
+      <span><span style="display:inline-block; width:11px; height:11px; background:#C44834; border-radius:1.5px; margin-right:6px; vertical-align:-1px;"></span>In Progress</span>
+      <span><span style="display:inline-block; width:11px; height:11px; background:#6B7BA4; border-radius:1.5px; margin-right:6px; vertical-align:-1px;"></span>Ready</span>
+    </div>
+
+    <div class="caption">The bands are roughly parallel — items move through the board at a steady rate. If WIP were too high, the In Progress band would swell and lag behind Done. If WIP were too low, Done would crawl. This is what stable flow looks like.</div>
+  </div>
+
+  <!-- HISTOGRAM -->
+  <div class="card">
+    <div class="label">Distribution · WIP = 5</div>
+    <h2>Lead Time Distribution</h2>
+    <div class="chart-subtitle">All finished items across 10,000 runs at the optimal WIP. The median is a comfortable story; the tail is the truth.</div>
+
+    <div class="hist-bars">
+      <div class="hist-bar" style="height: 8%"></div>
+      <div class="hist-bar" style="height: 22%"></div>
+      <div class="hist-bar" style="height: 48%"></div>
+      <div class="hist-bar" style="height: 74%"></div>
+      <div class="hist-bar" style="height: 92%"></div>
+      <div class="hist-bar" style="height: 100%"></div>
+      <div class="hist-bar" style="height: 88%"></div>
+      <div class="hist-bar" style="height: 71%"></div>
+      <div class="hist-bar" style="height: 55%"></div>
+      <div class="hist-bar" style="height: 41%"></div>
+      <div class="hist-bar" style="height: 30%"></div>
+      <div class="hist-bar" style="height: 22%"></div>
+      <div class="hist-bar" style="height: 16%"></div>
+      <div class="hist-bar" style="height: 11%"></div>
+      <div class="hist-bar" style="height: 8%"></div>
+      <div class="hist-bar" style="height: 6%"></div>
+      <div class="hist-bar" style="height: 4%"></div>
+      <div class="hist-bar" style="height: 3%"></div>
+      <div class="hist-bar" style="height: 2%"></div>
+      <div class="hist-bar" style="height: 2%"></div>
+      <div class="hist-bar" style="height: 1%"></div>
+      <div class="hist-bar" style="height: 1%"></div>
+    </div>
+    <div class="hist-axis">
+      <span>2d</span>
+      <span>8d</span>
+      <span>14d</span>
+      <span>20d</span>
+      <span>26d</span>
+      <span>32d</span>
+    </div>
+
+    <div class="hist-stats">
+      <div class="stat"><div class="key">Median</div><div class="val">12.4 d</div></div>
+      <div class="stat"><div class="key">Mean</div><div class="val">14.1 d</div></div>
+      <div class="stat"><div class="key">P85</div><div class="val">19.1 d</div></div>
+      <div class="stat"><div class="key">P95</div><div class="val">26.8 d</div></div>
+      <div class="stat"><div class="key">Max</div><div class="val">38.2 d</div></div>
+    </div>
+
+    <div class="caption">The distribution is right-skewed (as real cycle times always are). When you tell a stakeholder "lead time is 12 days," you're describing the median — but 1 in 20 items takes 27 days or more. That tail is what teams need to plan around, not the mean.</div>
+  </div>
+
+  <!-- TIME ACCOUNTING -->
+  <div class="card">
+    <div class="label">Where the Hours Went</div>
+    <h2>Time Accounting</h2>
+    <div class="chart-subtitle">Worker-hour breakdown across the team over the full 6-month simulation. Same team, two configurations.</div>
+
+    <div class="time-row">
+      <div class="row-head">
+        <span class="row-label">WIP = 5 &nbsp; <span style="color: var(--accent); font-weight: 600;">(optimal)</span></span>
+        <span>5 workers · 6 months · 4,680 worker-hours</span>
+      </div>
+      <div class="time-bar">
+        <div class="time-segment" style="width: 71%; background: #1F6F6B;">71% Working</div>
+        <div class="time-segment" style="width: 8%; background: #C99A3A;">8%</div>
+        <div class="time-segment" style="width: 14%; background: #C44834;">14% Blocked</div>
+        <div class="time-segment" style="width: 7%; background: #9A8A7A;">7%</div>
+      </div>
+    </div>
+
+    <div class="time-row">
+      <div class="row-head">
+        <span class="row-label">WIP = 12 &nbsp; <span style="color: var(--warning); font-weight: 600;">(overloaded)</span></span>
+        <span>same team, same arrival rate</span>
+      </div>
+      <div class="time-bar">
+        <div class="time-segment" style="width: 38%; background: #1F6F6B;">38% Working</div>
+        <div class="time-segment" style="width: 31%; background: #C99A3A;">31% Switching</div>
+        <div class="time-segment" style="width: 27%; background: #C44834;">27% Blocked</div>
+        <div class="time-segment" style="width: 4%; background: #9A8A7A;">4%</div>
+      </div>
+    </div>
+
+    <div class="time-legend">
+      <span><span class="swatch" style="background: #1F6F6B;"></span>Working — actually advancing items</span>
+      <span><span class="swatch" style="background: #C99A3A;"></span>Switching — context-switch ramp-up/down</span>
+      <span><span class="swatch" style="background: #C44834;"></span>Blocked — item stuck waiting on something</span>
+      <span><span class="swatch" style="background: #9A8A7A;"></span>Idle — nothing available to pull</span>
+    </div>
+
+    <div class="caption">At WIP=12 the team works <em>half as much</em> on actual items — the rest evaporates into context-switching and blocked-waiting. This is the multitasking tax made visible. Idle time is low at high WIP not because work is getting done, but because workers are always juggling something.</div>
+  </div>
+
+  <!-- ACTIONS -->
+  <div class="actions-bar">
+    <div class="left">
+      <button class="btn"><span class="icon">↓</span>Download Charts (PNG)</button>
+      <button class="btn"><span class="icon">↓</span>Download Results (CSV)</button>
+      <button class="btn"><span class="icon">⎘</span>Copy Share URL</button>
+    </div>
+    <div class="right">
+      <button class="btn">Edit Experiment</button>
+      <button class="btn btn-primary">Run a New One →</button>
+    </div>
+  </div>
+
+</main>
+
+</body>
+</html>
