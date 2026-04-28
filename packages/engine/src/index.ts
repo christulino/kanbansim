@@ -6,3 +6,6 @@ export { createItem, isBlocked, advanceItemEffort, resetEffortForColumnTransitio
 export { columnHasCapacity, currentWorkerLoads, workerCanPull } from "./board.js";
 export { effectiveWorkHours } from "./multitasking.js";
 export { decideWorkerAction, type WorkerAction } from "./worker.js";
+export { createEventQueue, popDueEvents, type EngineEvent, type EventQueue } from "./events.js";
+export { computeSummary, percentile } from "./metrics.js";
+export { processTick, type TickResult, type TickAccounting } from "./tick.js";
