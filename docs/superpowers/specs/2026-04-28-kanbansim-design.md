@@ -55,19 +55,83 @@ Persistent "Run Experiment" button top-right. Configurator state is URL-encoded 
 
 ### 3.3 Run (`/run`) — Lab Notebook style
 
-- Always-visible **Cancel** button (top-right).
-- Real-time charts populate as runs complete; confidence bands tighten visibly as more runs land.
-- Live counter: "1,247 / 10,000 runs complete · ~38 sec remaining."
-- Ambient animated CFD plays during runs, sampled from the in-flight result stream — gives the user something to watch (not just a progress bar).
-- Cancel = `worker.terminate()` on every Web Worker, immediate halt. Partial results stay on screen.
+The run view and the results view are **the same page in different states.** No jarring transition between them; the page animates from sparse-and-streaming to complete as the last run lands.
 
-### 3.4 Results (`/results`) — Lab Notebook style
+#### Layout (identical to results)
 
-- Four hero charts (full-width, stacked vertically; see §8).
-- Each chart has a "Download PNG / SVG" affordance.
-- "Download raw results (CSV / JSON)" button.
-- "Copy share link" button — copies the URL with full config + seeds, so the recipient runs the bit-identical experiment.
-- Each chart has a one-paragraph "What this is showing you" caption written for a manager, not a statistician.
+- Same header.
+- Same title block, but the stamp reads **"Running · 1,247 / 10,000"** with a soft pulse animation, instead of "Run Complete."
+- Same configuration strip — locked (parameters cannot be changed mid-run).
+- Same four chart cards, full-width, stacked vertically.
+- Persistent **Cancel** button floating top-right of the page header.
+
+#### What each chart does during the run
+
+**Hero U-curve chart**
+- t=0: empty axis frame, no data points.
+- t≈0.5s: scattered points appear at each WIP value as runs land — sample size per WIP cell grows independently.
+- t≈2s: ~1,000 runs across cells; the U-curve shape is visibly forming.
+- t≈5–10s: confidence bands appear as semi-transparent fills, *tightening* as variance shrinks per cell.
+- The "optimal WIP ≈ N" hand-drawn annotation only appears once ≥50% of runs are done. We don't display annotations on noisy data — wrong claims are worse than no claims.
+
+**CFD (single representative run)**
+- Plays continuously as an animation — one full 6-month simulation animates across ~8 seconds wall-clock, then loops with a fresh representative run sampled from the in-flight result stream.
+- This is the **ambient motion** that signals "the engine is running" without a spinner.
+- After all runs complete: the animation pauses on the median-throughput run at the optimal WIP value.
+
+**Lead-time histogram**
+- Bars grow vertically as more completed-item lead times accumulate.
+- Stat row (Median / Mean / P85 / P95 / Max) updates live, settling visibly as the distribution fills out.
+- Subtitle initially shows "Sample size: 247 items" and updates with the count.
+
+**Time-accounting bars**
+- Each row needs runs at its specific WIP value (optimal vs. overloaded). Until at least ~50 runs have landed at that cell, the row shows "Filling..." with a faint progress fill.
+- Once data is sufficient, the row reveals its proportions and animates from gray to colored segments.
+
+#### Counter and ETA
+
+Below the title block, in mono:
+
+```
+1,247 / 10,000 runs · ~38 sec remaining · 4 workers · 326 runs/sec
+```
+
+The runs/sec rate stabilizes within the first ~2 seconds and is what the ETA is calculated from. Slower machines show longer ETAs naturally; no calibration required.
+
+#### Action bar (bottom)
+
+- **During run**: download / share / "Edit experiment" buttons are visible but dimmed (disabled). Right-side primary CTA shows nothing — Cancel is the only action.
+- **Once complete**: stamp flips from "Running" to "Run Complete," all action buttons enable, primary CTA becomes "Run a New One →"
+
+#### Cancel behavior
+
+- Click → `worker.terminate()` on every Web Worker, instant halt. No zombies.
+- Stamp flips to **"Cancelled · 1,247 / 10,000"** in warning color (terracotta).
+- Charts retain partial data; the user can still download what they have, copy the share URL, or run a new experiment.
+- No re-confirm dialog — the user explicitly clicked Cancel; respect their input.
+
+#### What we deliberately do not show
+
+- No traditional spinner or loading bar competing with chart updates — the streaming chart animations *are* the progress indicator.
+- No "step-by-step debugger" view of a single simulation. (That's a candidate v1.5 "Inspect a single run" feature.)
+- No intermediate "computing aggregates…" states. The aggregator update is throttled to 10–20Hz so the eye sees smooth chart motion, not flicker.
+- No micro-interactions that distract from the chart updates (hover effects on disabled buttons, decorative animations, etc.). The data is the show.
+
+### 3.4 Results (`/results`) — same page as Run, completed state
+
+The `/results` URL is the same view as `/run` after the last run lands or after Cancel. The differences are state-driven:
+
+- **Stamp** reads "Run Complete · 10,000 / 10,000" (or "Cancelled · 1,247 / 10,000" if cancelled).
+- **All action buttons enabled**:
+  - Download per chart: PNG and SVG.
+  - "Download raw results (CSV / JSON)" — single export of the full result set.
+  - "Copy share link" — copies a URL containing the full config + master seed, reproducing the experiment bit-for-bit on the recipient's machine.
+  - "Edit experiment" — returns to `/build` with current config preloaded.
+  - Primary CTA: "Run a New One →"
+- **Each chart's caption** updates from running-state text to a one-paragraph "What this is showing you" written for a manager, not a statistician (see §8 for chart-specific captions).
+- **CFD animation** stops on the median-throughput representative run at the optimal sweep cell.
+
+Routing detail: when the user lands on `/run`, the page stays at `/run` until the last run completes; on completion the URL updates to `/results?...` (same query params) without a navigation event, so the back button still returns to `/build`. A user pasting a `/results?...` URL with a complete run-id triggers a fresh re-run from the seed (the URL is the experiment, not the result data — results are not server-stored in v1).
 
 ### 3.5 Cross-cutting
 
