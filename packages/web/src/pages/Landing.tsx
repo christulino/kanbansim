@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { PresetCard } from "../components/PresetCard.js";
 
 export function Landing() {
   return (
@@ -15,7 +16,11 @@ export function Landing() {
         </aside>
       </div>
 
-      <div className="preset-grid" id="presets">{/* PresetCards in Task 31 */}</div>
+      <div className="preset-grid">
+        <PresetCard id="sweet-spot" />
+        <PresetCard id="qa-bottleneck" />
+        <PresetCard id="multitasking-tax" />
+      </div>
 
       <Link to="/build" className="build-link">Or build your own experiment →</Link>
     </main>
