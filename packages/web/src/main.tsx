@@ -11,6 +11,7 @@ import "./styles/build.css";
 import "./styles/run.css";
 import "./styles/chart.css";
 import "./styles/landing.css";
+import "./styles/learn.css";
 
 const root = document.getElementById("root");
 if (!root) throw new Error("#root not found");
