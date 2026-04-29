@@ -10,12 +10,12 @@ export const CAPTIONS = {
     complete: "The bands are roughly parallel — items move through the board at a steady rate. If WIP were too high, the In Progress band would swell and lag behind Done. If WIP were too low, Done would crawl. This is what stable flow looks like.",
   },
   histogram: {
-    running: "Every completed item across all runs lands in this distribution. The tail will keep growing — long tails are real.",
-    complete: "The distribution is right-skewed (as real cycle times always are). When you tell a stakeholder \"lead time is N days,\" you're describing the median — but 1 in 20 items takes much longer. That tail is what teams need to plan around, not the mean.",
+    running: "Each box is one sweep value. The middle line is the median lead time; the box covers the middle 50% of finished items; the whiskers go to the 10th and 90th percentiles. Watch the boxes settle and the whiskers stretch.",
+    complete: "Lower medians and tighter boxes are healthier teams. As multitasking grows, the box gets taller (variance grows) and shifts up (median gets worse). Real-world teams live in the boxes — what you tell stakeholders is the median, but what they remember is the p90.",
   },
   timeAccounting: {
-    running: "Worker-hours accumulate per cell. The contrast between optimal and overloaded sharpens as runs land.",
-    complete: "At higher WIP the team works less on actual items — the rest evaporates into context-switching and blocked-waiting. This is the multitasking tax made visible. Idle time goes down at high WIP not because work is getting done, but because workers are always juggling something.",
+    running: "The working band is the team's actual output. Watch it shrink and the switching/blocked bands swell as you sweep into overload.",
+    complete: "At low WIP, idle dominates — the team is starved. At the sweet spot, working dominates. Past it, switching and blocked eat the day. This is the multitasking tax made visible across the whole sweep, not just two arbitrary points.",
   },
 };
 

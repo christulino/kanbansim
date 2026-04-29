@@ -121,12 +121,12 @@ export function RunResults() {
         <CfdChart snapshot={exp.snapshot} isComplete={exp.status === "complete"} productive_hours_per_day={phpd} />
       </ChartCard>
 
-      <ChartCard label="Distribution" title="Lead Time Distribution" subtitle="Completed-item lead times at the optimal sweep cell. The median is a comfortable story; the tail is the truth." caption={<Caption kind="histogram" status={exp.status} />}>
-        <HistogramChart snapshot={exp.snapshot} productive_hours_per_day={phpd} />
+      <ChartCard label="Distribution" title="Lead Time Distribution by Sweep Value" subtitle="Each box shows lead-time spread for one cell. Box = p25–p75 (IQR), inner line = median, whiskers = p10/p90. Watch the whiskers fan out as multitasking tax kicks in." caption={<Caption kind="histogram" status={exp.status} />}>
+        <HistogramChart snapshot={exp.snapshot} sweep={state.sweep} productive_hours_per_day={phpd} />
       </ChartCard>
 
-      <ChartCard label="Where the Hours Went" title="Time Accounting" subtitle="Worker-hour breakdown at the optimal vs. overloaded sweep values." caption={<Caption kind="timeAccounting" status={exp.status} />}>
-        <TimeAccountingChart snapshot={exp.snapshot} sweepVariable={state.sweep?.variable ?? null} />
+      <ChartCard label="Where the Hours Went" title="Time Accounting Across the Sweep" subtitle="Stacked share of worker time — Working, Switching, Blocked, Idle — across every sweep value. Watch the Working band shrink as multitasking tax grows." caption={<Caption kind="timeAccounting" status={exp.status} />}>
+        <TimeAccountingChart snapshot={exp.snapshot} sweep={state.sweep} />
       </ChartCard>
 
       <ActionBar

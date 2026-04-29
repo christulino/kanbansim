@@ -80,19 +80,34 @@ export function UCurveChart({ snapshot, sweep, productive_hours_per_day, totalRu
     wrap.appendChild(fig2);
 
     if (snapshot.total_runs >= totalRunsExpected * 0.5 && points.length >= 3) {
-      const optimal = points.reduce((acc, p) => (p.lt_days < acc.lt_days ? p : acc), points[0]!);
+      const minLead = points.reduce((acc, p) => (p.lt_days < acc.lt_days ? p : acc), points[0]!);
+      const maxThroughput = points.reduce((acc, p) => (p.throughput > acc.throughput ? p : acc), points[0]!);
       const ann = document.createElementNS(SVG_NS, "svg");
       ann.setAttribute("style", "position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;");
       ann.setAttribute("viewBox", "0 0 1100 360");
-      const text = document.createElementNS(SVG_NS, "text");
-      const xPos = ((optimal.x - sweep.min) / (sweep.max - sweep.min)) * 980 + 60;
-      text.setAttribute("x", String(xPos));
-      text.setAttribute("y", "40");
-      text.setAttribute("font-family", "Caveat, cursive");
-      text.setAttribute("font-size", "20");
-      text.setAttribute("fill", "var(--accent)");
-      text.textContent = `optimal ≈ ${optimal.x.toFixed(0)}`;
-      ann.appendChild(text);
+      const xFor = (v: number) => ((v - sweep.min) / (sweep.max - sweep.min)) * 980 + 60;
+
+      // Shortest lead time annotation (terracotta — matches the lead-time line)
+      const ltLabel = document.createElementNS(SVG_NS, "text");
+      ltLabel.setAttribute("x", String(xFor(minLead.x)));
+      ltLabel.setAttribute("y", "40");
+      ltLabel.setAttribute("text-anchor", "middle");
+      ltLabel.setAttribute("font-family", "Caveat, cursive");
+      ltLabel.setAttribute("font-size", "20");
+      ltLabel.setAttribute("fill", "var(--series-2)");
+      ltLabel.textContent = `shortest lead time ≈ ${minLead.x.toFixed(0)}`;
+      ann.appendChild(ltLabel);
+
+      // Highest throughput annotation (teal — matches throughput line). Place at a different y so they don't collide.
+      const tpLabel = document.createElementNS(SVG_NS, "text");
+      tpLabel.setAttribute("x", String(xFor(maxThroughput.x)));
+      tpLabel.setAttribute("y", "65");
+      tpLabel.setAttribute("text-anchor", "middle");
+      tpLabel.setAttribute("font-family", "Caveat, cursive");
+      tpLabel.setAttribute("font-size", "20");
+      tpLabel.setAttribute("fill", "var(--series-1)");
+      tpLabel.textContent = `highest throughput ≈ ${maxThroughput.x.toFixed(0)}`;
+      ann.appendChild(tpLabel);
       wrap.appendChild(ann);
     }
 
