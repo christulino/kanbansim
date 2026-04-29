@@ -1,4 +1,5 @@
 import { HashRouter, Route, Routes } from "react-router-dom";
+import { Header } from "./components/Header.js";
 import { Landing } from "./pages/Landing.js";
 import { Build } from "./pages/Build.js";
 import { RunResults } from "./pages/RunResults.js";
@@ -7,6 +8,7 @@ import { Learn } from "./pages/Learn.js";
 export function App() {
   return (
     <HashRouter>
+      <Header />
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/build" element={<Build />} />

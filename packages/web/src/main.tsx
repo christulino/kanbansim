@@ -5,6 +5,7 @@ import "./styles/tokens.css";
 import "./styles/reset.css";
 import "./styles/global.css";
 import "./styles/grid-paper.css";
+import "./styles/header.css";
 
 const root = document.getElementById("root");
 if (!root) throw new Error("#root not found");
