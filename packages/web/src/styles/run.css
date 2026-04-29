@@ -1,0 +1,88 @@
+.run-page {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 36px 40px 80px;
+}
+.run-pagehead {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  border-bottom: 1px solid var(--rule);
+  padding-bottom: 22px;
+  margin-bottom: 12px;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+.run-pagehead .titles { flex: 1 1 320px; min-width: 0; }
+.run-pagehead h1 {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: clamp(26px, 4.5vw, 40px);
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+}
+.run-pagehead h1 em { font-style: italic; color: var(--accent); font-weight: 500; }
+.run-pagehead .meta {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-soft);
+  text-align: right;
+  line-height: 1.7;
+}
+.run-pagehead .meta .key { color: var(--text-faint); }
+
+.stamp {
+  display: inline-block;
+  border: 1.5px solid var(--accent);
+  color: var(--accent);
+  padding: 5px 11px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  transform: rotate(-1.8deg);
+  border-radius: 2px;
+  font-weight: 500;
+}
+.stamp-running { animation: stamp-pulse 1.4s ease-in-out infinite; }
+.stamp-warning { border-color: var(--warning); color: var(--warning); }
+.stamp-idle { border-color: var(--rule); color: var(--text-faint); }
+@keyframes stamp-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+
+.run-counter {
+  font-size: 12px;
+  color: var(--text-soft);
+  margin-bottom: 28px;
+}
+
+.cancel-btn {
+  position: fixed;
+  top: 76px;
+  right: 28px;
+  z-index: 20;
+}
+
+.actions-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 24px;
+  border-top: 1px solid var(--rule);
+  margin-top: 8px;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+.actions-bar .left, .actions-bar .right { display: flex; gap: 10px; flex-wrap: wrap; }
+
+@media (max-width: 760px) {
+  .run-page { padding: 22px 18px 60px; }
+  .run-pagehead { flex-direction: column; align-items: flex-start; }
+  .run-pagehead .meta { text-align: left; width: 100%; }
+  .actions-bar { flex-direction: column; align-items: stretch; }
+  .actions-bar .left, .actions-bar .right { justify-content: center; }
+  .cancel-btn { top: auto; bottom: 16px; right: 16px; }
+}
