@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { PresetCard } from "../components/PresetCard.js";
+import { AmbientUCurve } from "../components/AmbientUCurve.js";
 
 export function Landing() {
   return (
@@ -11,8 +12,7 @@ export function Landing() {
           <p>Built for managers, team leads, and agile coaches who suspect their team is overloaded but don't know what number is right. KanbanSim turns Little's Law into a tangible thing — a U-curve you can see, share, and play with.</p>
         </div>
         <aside className="landing-hero-aside">
-          <div className="label">How it works</div>
-          <p>Each experiment runs the same simulated team thousands of times across a range of WIP limits. The shape of the resulting curve is what teaches you. No login, no backend — everything runs in your browser.</p>
+          <AmbientUCurve />
         </aside>
       </div>
 
