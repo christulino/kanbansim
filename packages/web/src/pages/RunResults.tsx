@@ -126,7 +126,7 @@ export function RunResults() {
       </ChartCard>
 
       <ChartCard label="Where the Hours Went" title="Time Accounting" subtitle="Worker-hour breakdown at the optimal vs. overloaded sweep values." caption={<Caption kind="timeAccounting" status={exp.status} />}>
-        <TimeAccountingChart snapshot={exp.snapshot} />
+        <TimeAccountingChart snapshot={exp.snapshot} sweepVariable={state.sweep?.variable ?? null} />
       </ChartCard>
 
       <ActionBar

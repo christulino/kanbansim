@@ -30,6 +30,6 @@ export async function loadPreset(id: PresetId): Promise<ExperimentState> {
     sweep: file.sweep ?? null,
     randomized: [],
     master_seed: "1",
-    runs: 1000,
+    runs: 100,
   };
 }

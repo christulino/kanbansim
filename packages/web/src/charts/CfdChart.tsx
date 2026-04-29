@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
 import type { AggregatorSnapshot } from "../orchestrator/aggregator.js";
 import type { CfdSnapshot } from "@kanbansim/engine";
 
@@ -19,6 +19,7 @@ const COLORS: Record<(typeof COLUMNS)[number], string> = {
 
 export function CfdChart({ snapshot, isComplete, productive_hours_per_day }: Props) {
   const cfd = useMemo(() => pickRepresentativeCfd(snapshot), [snapshot]);
+  const stickyMaxRef = useRef(1);
 
   if (!cfd || cfd.length === 0) {
     return <div className="card-loading">Waiting for the first run to complete…</div>;
@@ -30,7 +31,10 @@ export function CfdChart({ snapshot, isComplete, productive_hours_per_day }: Pro
   const xScale = (tick: number) => (tick / (cfd.length - 1)) * W;
   const totalAtTick = (snap: CfdSnapshot) =>
     snap.counts.done + snap.counts.validation + snap.counts.in_progress + snap.counts.ready + snap.counts.backlog;
-  const maxTotal = Math.max(...cfd.map(totalAtTick), 1);
+  const observedMax = Math.max(...cfd.map(totalAtTick), 1);
+  // Sticky scale: only ratchets up so the chart doesn't shrink when a smaller-totals run is sampled.
+  if (observedMax > stickyMaxRef.current) stickyMaxRef.current = observedMax;
+  const maxTotal = stickyMaxRef.current;
   const yScale = (count: number) => H - (count / maxTotal) * H;
 
   const paths = COLUMNS.map((_, i) => {

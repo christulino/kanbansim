@@ -1,7 +1,10 @@
 import { useMemo } from "react";
 import type { AggregatorSnapshot, CellStats } from "../orchestrator/aggregator.js";
 
-type Props = { snapshot: AggregatorSnapshot | null };
+type Props = {
+  snapshot: AggregatorSnapshot | null;
+  sweepVariable: string | null;
+};
 
 const SEG = ["hours_working", "hours_switching", "hours_blocked", "hours_idle"] as const;
 const COLORS: Record<(typeof SEG)[number], string> = {
@@ -17,16 +20,33 @@ const LABELS: Record<(typeof SEG)[number], string> = {
   hours_idle: "Idle",
 };
 
-export function TimeAccountingChart({ snapshot }: Props) {
+const VARIABLE_LABELS: Record<string, string> = {
+  "board.wip_in_progress": "In Progress WIP",
+  "board.wip_validation": "Validation WIP",
+  "board.wip_ready": "Ready WIP",
+  "team.switch_cost_minutes": "Switch cost (min)",
+  "team.size": "Team size",
+  "team.pace_penalty": "Pace penalty",
+  "work.arrival_rate_per_day": "Arrival rate (/day)",
+  "work.block_probability_per_day": "Block prob. (/day)",
+};
+
+function friendlyLabel(variable: string | null, value: number): string {
+  if (!variable) return `Cell ${value}`;
+  const friendly = VARIABLE_LABELS[variable] ?? variable;
+  return `${friendly} = ${value}`;
+}
+
+export function TimeAccountingChart({ snapshot, sweepVariable }: Props) {
   const { optimal, overloaded } = useMemo(() => pickPair(snapshot), [snapshot]);
 
   if (!optimal) return <div className="card-loading">Need at least one run to summarize time…</div>;
 
   return (
     <div>
-      <Row title={`Sweep = ${optimal.sweep_value}`} flavor="optimal" cell={optimal} />
+      <Row title={friendlyLabel(sweepVariable, optimal.sweep_value)} flavor="optimal" cell={optimal} />
       {overloaded && overloaded.sweep_value !== optimal.sweep_value && (
-        <Row title={`Sweep = ${overloaded.sweep_value}`} flavor="overloaded" cell={overloaded} />
+        <Row title={friendlyLabel(sweepVariable, overloaded.sweep_value)} flavor="overloaded" cell={overloaded} />
       )}
       <div className="time-legend">
         {SEG.map((k) => (
