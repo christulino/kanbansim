@@ -8,6 +8,7 @@ import { ConfigStrip } from "../components/ConfigStrip.js";
 import { ChartCard } from "../components/ChartCard.js";
 import { ActionBar } from "../components/ActionBar.js";
 import { Caption } from "../components/Caption.js";
+import { downloadBlob, downloadPng, downloadSvg, snapshotToCsv, snapshotToJson } from "../lib/download.js";
 import { UCurveChart } from "../charts/UCurveChart.js";
 import { CfdChart } from "../charts/CfdChart.js";
 import { HistogramChart } from "../charts/HistogramChart.js";
@@ -52,6 +53,27 @@ export function RunResults() {
       setShareCopied(true);
       setTimeout(() => setShareCopied(false), 1800);
     });
+  }
+
+  async function handleDownloadCharts() {
+    const sections = document.querySelectorAll<HTMLElement>(".run-page .card");
+    for (let i = 0; i < sections.length; i++) {
+      const svg = sections[i]!.querySelector("svg");
+      if (!svg) continue;
+      const titleEl = sections[i]!.querySelector("h2");
+      const title = (titleEl?.textContent ?? `chart-${i + 1}`).trim().toLowerCase().replace(/\s+/g, "-");
+      downloadSvg(svg, `${title}.svg`);
+      await downloadPng(svg, `${title}.png`);
+    }
+  }
+
+  function handleDownloadRaw() {
+    if (!state || !exp.snapshot) return;
+    const slug = state.name.replace(/\s+/g, "-").toLowerCase();
+    const csv = snapshotToCsv(exp.snapshot, state.config.team.productive_hours_per_day);
+    downloadBlob(new Blob([csv], { type: "text/csv" }), `${slug}-results.csv`);
+    const json = snapshotToJson(exp.snapshot, state);
+    downloadBlob(new Blob([json], { type: "application/json" }), `${slug}-results.json`);
   }
 
   if (error) return <main data-surface="paper" className="run-page"><p>{error}</p></main>;
@@ -110,8 +132,8 @@ export function RunResults() {
       <ActionBar
         status={exp.status}
         state={state}
-        onDownloadCharts={() => { /* wired in Phase F */ }}
-        onDownloadRaw={() => { /* wired in Phase F */ }}
+        onDownloadCharts={handleDownloadCharts}
+        onDownloadRaw={handleDownloadRaw}
         onCopyShare={handleCopyShare}
         shareCopied={shareCopied}
       />
