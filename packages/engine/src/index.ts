@@ -10,3 +10,4 @@ export { createEventQueue, popDueEvents, type EngineEvent, type EventQueue } fro
 export { computeSummary, percentile } from "./metrics.js";
 export { processTick, type TickResult, type TickAccounting } from "./tick.js";
 export { runSimulation } from "./runSimulation.js";
+export { setAtPath, generateSweepValues } from "./sweep.js";
