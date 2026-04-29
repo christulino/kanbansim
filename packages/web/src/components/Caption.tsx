@@ -6,8 +6,8 @@ export const CAPTIONS = {
     complete: "A clean U-curve. Below the optimum, the team is starved — workers idle when items block. Above it, multitasking tax dominates and lead time blows up. The sweet spot is broader than most teams assume — that's the manager's permission to experiment.",
   },
   cfd: {
-    running: "A representative run animates as the sim plays out. Watch the bands try to stay parallel — that's stable flow.",
-    complete: "The bands are roughly parallel — items move through the board at a steady rate. If WIP were too high, the In Progress band would swell and lag behind Done. If WIP were too low, Done would crawl. This is what stable flow looks like.",
+    running: "Each bar is one sweep value. Heights reveal how items distribute across the board on average. As more runs land, the bars settle.",
+    complete: "Read the bars left-to-right: at low WIP, Backlog and Ready dominate (team is starved waiting on a tiny in-flight pool). Around the sweet spot, the In Progress / Validation bands stay short — work flows. At high WIP, In Progress swells and Done gets there slower — multitasking tax in column form.",
   },
   histogram: {
     running: "Each box is one sweep value. The middle line is the median lead time; the box covers the middle 50% of finished items; the whiskers go to the 10th and 90th percentiles. Watch the boxes settle and the whiskers stretch.",

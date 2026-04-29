@@ -10,7 +10,7 @@ import { ActionBar } from "../components/ActionBar.js";
 import { Caption } from "../components/Caption.js";
 import { downloadBlob, downloadPng, downloadSvg, snapshotToCsv, snapshotToJson } from "../lib/download.js";
 import { UCurveChart } from "../charts/UCurveChart.js";
-import { CfdChart } from "../charts/CfdChart.js";
+import { BoardLoadChart } from "../charts/BoardLoadChart.js";
 import { HistogramChart } from "../charts/HistogramChart.js";
 import { TimeAccountingChart } from "../charts/TimeAccountingChart.js";
 
@@ -117,8 +117,8 @@ export function RunResults() {
         <UCurveChart snapshot={exp.snapshot} sweep={state.sweep} productive_hours_per_day={phpd} totalRunsExpected={totalRunsExpected} />
       </ChartCard>
 
-      <ChartCard label="Single Run" title="Cumulative Flow" subtitle="A representative run at the optimal sweep value. Watch the bands stay parallel — that's stable flow." caption={<Caption kind="cfd" status={exp.status} />}>
-        <CfdChart snapshot={exp.snapshot} isComplete={exp.status === "complete"} productive_hours_per_day={phpd} />
+      <ChartCard label="Board Load" title="Average Items per Column by Sweep Value" subtitle="For each sweep value, the average number of items sitting in each column over the simulated time. Tall Backlog/Ready = team is starved. Tall In Progress/Validation = work is piling up. Done is cumulative finished work." caption={<Caption kind="cfd" status={exp.status} />}>
+        <BoardLoadChart snapshot={exp.snapshot} sweep={state.sweep} />
       </ChartCard>
 
       <ChartCard label="Distribution" title="Lead Time Distribution by Sweep Value" subtitle="Each box shows lead-time spread for one cell. Box = p25–p75 (IQR), inner line = median, whiskers = p10/p90. Watch the whiskers fan out as multitasking tax kicks in." caption={<Caption kind="histogram" status={exp.status} />}>
