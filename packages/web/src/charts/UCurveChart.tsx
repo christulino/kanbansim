@@ -63,7 +63,7 @@ export function UCurveChart({ snapshot, sweep, productive_hours_per_day, totalRu
       marginLeft: 60,
       marginRight: 80,
       marginBottom: 50,
-      style: { background: "transparent", color: "var(--text-soft)", fontFamily: "JetBrains Mono, monospace", fontSize: "11px", position: "absolute", top: 0, left: 0, pointerEvents: "none" },
+      style: { background: "transparent", color: "var(--text-soft)", fontFamily: "JetBrains Mono, monospace", fontSize: "11px", position: "absolute", top: "0", left: "0", pointerEvents: "none" },
       x: { domain: [sweep.min, sweep.max], axis: null },
       y: { axis: "right", label: "Throughput (items/day)", domain: [0, tpMax] },
       marks: [
