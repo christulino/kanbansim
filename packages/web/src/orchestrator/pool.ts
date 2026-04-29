@@ -85,7 +85,7 @@ export function runPool(opts: PoolOptions): PoolHandle {
 }
 
 function defaultWorkerFactory(): Worker {
-  return new Worker(new URL("./worker.js", import.meta.url), { type: "module" });
+  return new Worker(new URL("./worker.ts", import.meta.url), { type: "module" });
 }
 
 function partition<T>(items: T[], n: number): T[][] {

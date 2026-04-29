@@ -3,10 +3,10 @@ import type { ReactNode } from "react";
 type Props = {
   label: string;
   title: ReactNode;
-  subtitle?: string;
+  subtitle?: string | undefined;
   children: ReactNode;
-  caption?: ReactNode;
-  chartRef?: (el: HTMLDivElement | null) => void;
+  caption?: ReactNode | undefined;
+  chartRef?: ((el: HTMLDivElement | null) => void) | undefined;
 };
 
 export function ChartCard({ label, title, subtitle, children, caption, chartRef }: Props) {

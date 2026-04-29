@@ -1,11 +1,26 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
-import { decodeExperiment, type ExperimentState } from "../state/urlCodec.js";
+import { decodeExperiment, encodeExperiment, type ExperimentState } from "../state/urlCodec.js";
+import { useExperiment } from "../orchestrator/useExperiment.js";
+import { Stamp } from "../components/Stamp.js";
+import { Counter } from "../components/Counter.js";
+import { ConfigStrip } from "../components/ConfigStrip.js";
+import { ChartCard } from "../components/ChartCard.js";
+import { ActionBar } from "../components/ActionBar.js";
+import { Caption } from "../components/Caption.js";
+import { UCurveChart } from "../charts/UCurveChart.js";
+import { CfdChart } from "../charts/CfdChart.js";
+import { HistogramChart } from "../charts/HistogramChart.js";
+import { TimeAccountingChart } from "../charts/TimeAccountingChart.js";
 
 export function RunResults() {
   const location = useLocation();
   const [state, setState] = useState<ExperimentState | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [shareCopied, setShareCopied] = useState(false);
+  const startedRef = useRef(false);
+
+  const exp = useExperiment();
 
   useEffect(() => {
     const params = new URLSearchParams(location.search || location.hash.split("?")[1] || "");
@@ -16,16 +31,90 @@ export function RunResults() {
     setState(decoded);
   }, [location.search, location.hash]);
 
-  if (error) {
-    return <main data-surface="paper" className="build-page"><p>{error}</p></main>;
+  useEffect(() => {
+    if (!state || startedRef.current) return;
+    startedRef.current = true;
+    exp.start(state);
+  }, [state, exp]);
+
+  useEffect(() => {
+    if (exp.status === "complete" && location.pathname !== "/results") {
+      const params = new URLSearchParams(location.search || location.hash.split("?")[1] || "");
+      const e = params.get("e") ?? "";
+      window.history.replaceState(null, "", `#/results?e=${e}`);
+    }
+  }, [exp.status, location.pathname, location.search, location.hash]);
+
+  function handleCopyShare() {
+    if (!state) return;
+    const url = `${window.location.origin}${window.location.pathname}#/results?e=${encodeExperiment(state)}`;
+    navigator.clipboard?.writeText(url).then(() => {
+      setShareCopied(true);
+      setTimeout(() => setShareCopied(false), 1800);
+    });
   }
-  if (!state) {
-    return <main data-surface="paper" className="build-page"><p>Loading…</p></main>;
-  }
+
+  if (error) return <main data-surface="paper" className="run-page"><p>{error}</p></main>;
+  if (!state) return <main data-surface="paper" className="run-page"><p>Loading…</p></main>;
+
+  const isRunning = exp.status === "running";
+  const phpd = state.config.team.productive_hours_per_day;
+  const totalRunsExpected = exp.runsTotal;
+
   return (
     <main data-surface="paper" className="run-page">
-      <h1>Run / Results — phase D placeholder</h1>
-      <p className="mono">runs: {state.runs} · sweep: {state.sweep?.variable ?? "(none)"}</p>
+      <div className="run-pagehead">
+        <div className="titles">
+          <div className="label">Experiment {exp.status === "complete" ? "Results" : "Run"}</div>
+          <h1>{state.name}</h1>
+        </div>
+        <div className="meta">
+          <Stamp status={exp.status} runsCompleted={exp.runsCompleted} runsTotal={exp.runsTotal} />
+          <div><span className="key">runs</span> &nbsp;{state.runs.toLocaleString()}</div>
+          <div><span className="key">simulated</span> &nbsp;{state.config.simulation.sim_days} days</div>
+          <div><span className="key">seed</span> &nbsp;{state.master_seed}</div>
+        </div>
+      </div>
+
+      <Counter
+        runsCompleted={exp.runsCompleted}
+        runsTotal={exp.runsTotal}
+        workerCount={exp.workerCount}
+        runsPerSec={exp.runsPerSec}
+        etaSeconds={exp.etaSeconds}
+        isRunning={isRunning}
+      />
+
+      {isRunning && (
+        <button className="btn btn-warning cancel-btn" onClick={exp.cancel} type="button">Cancel</button>
+      )}
+
+      <ConfigStrip state={state} />
+
+      <ChartCard label="Hero · Sweep Result" title={<>Lead Time &amp; Throughput vs. <em>{state.sweep?.variable ?? "—"}</em></>} subtitle={state.sweep ? `Bands = 5th–95th percentile across runs.` : undefined} caption={<Caption kind="ucurve" status={exp.status} />}>
+        <UCurveChart snapshot={exp.snapshot} sweep={state.sweep} productive_hours_per_day={phpd} totalRunsExpected={totalRunsExpected} />
+      </ChartCard>
+
+      <ChartCard label="Single Run" title="Cumulative Flow" subtitle="A representative run at the optimal sweep value. Watch the bands stay parallel — that's stable flow." caption={<Caption kind="cfd" status={exp.status} />}>
+        <CfdChart snapshot={exp.snapshot} isComplete={exp.status === "complete"} productive_hours_per_day={phpd} />
+      </ChartCard>
+
+      <ChartCard label="Distribution" title="Lead Time Distribution" subtitle="Completed-item lead times at the optimal sweep cell. The median is a comfortable story; the tail is the truth." caption={<Caption kind="histogram" status={exp.status} />}>
+        <HistogramChart snapshot={exp.snapshot} productive_hours_per_day={phpd} />
+      </ChartCard>
+
+      <ChartCard label="Where the Hours Went" title="Time Accounting" subtitle="Worker-hour breakdown at the optimal vs. overloaded sweep values." caption={<Caption kind="timeAccounting" status={exp.status} />}>
+        <TimeAccountingChart snapshot={exp.snapshot} />
+      </ChartCard>
+
+      <ActionBar
+        status={exp.status}
+        state={state}
+        onDownloadCharts={() => { /* wired in Phase F */ }}
+        onDownloadRaw={() => { /* wired in Phase F */ }}
+        onCopyShare={handleCopyShare}
+        shareCopied={shareCopied}
+      />
     </main>
   );
 }
