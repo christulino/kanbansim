@@ -21,27 +21,77 @@ function mkInProgress(id: number, authorId: number, effortDone: number, blocked:
   };
 }
 
-describe("worker decision tree", () => {
-  it("works on its current active item if unblocked", () => {
-    const worker: Worker = { id: 1, active_item_ids: [10], last_chosen_item_id: 10 };
-    const items = [mkInProgress(10, 1, 2, false)];
-    const action = decideWorkerAction({ worker, allWorkers: [worker], items, config: baseConfig, currentTick: 5 });
-    expect(action.kind).toBe("work_on");
-    if (action.kind === "work_on") expect(action.itemId).toBe(10);
-  });
+function mkReady(id: number): Item {
+  return { ...createItem({ id, arrival_tick: 0, effort_required_hours: 8, validation_effort_hours: 3 }), column: "ready" };
+}
 
-  it("with all my items blocked + start_new policy, pulls from Ready when allowed", () => {
-    const worker: Worker = { id: 1, active_item_ids: [10], last_chosen_item_id: 10 };
+describe("worker decision tree (parallel-work model)", () => {
+  it("returns parallel_work with all my unblocked items", () => {
+    const worker: Worker = { id: 1, active_item_ids: [10, 11, 12], last_chosen_item_id: null };
     const items = [
-      mkInProgress(10, 1, 2, true),
-      { ...createItem({ id: 20, arrival_tick: 0, effort_required_hours: 8, validation_effort_hours: 3 }), column: "ready" as const },
+      mkInProgress(10, 1, 2, false),
+      mkInProgress(11, 1, 1, false),
+      mkInProgress(12, 1, 5, true),                // blocked
     ];
     const action = decideWorkerAction({ worker, allWorkers: [worker], items, config: baseConfig, currentTick: 5 });
-    expect(action.kind).toBe("pull_from_ready");
+    expect(action.kind).toBe("parallel_work");
+    if (action.kind === "parallel_work") {
+      expect(action.progressItemIds).toEqual(expect.arrayContaining([10, 11]));
+      expect(action.progressItemIds).not.toContain(12);
+      expect(action.pullFromReady).toBeUndefined();
+    }
+  });
+
+  it("pulls from Ready when room and not at highest load (parallel_work + pullFromReady)", () => {
+    const worker: Worker = { id: 1, active_item_ids: [10], last_chosen_item_id: null };
+    const peer: Worker = { id: 2, active_item_ids: [50, 51], last_chosen_item_id: null };
+    const items = [
+      mkInProgress(10, 1, 2, false),
+      mkInProgress(50, 2, 1, false),
+      mkInProgress(51, 2, 1, false),
+      mkReady(20),
+    ];
+    const action = decideWorkerAction({ worker, allWorkers: [worker, peer], items, config: baseConfig, currentTick: 5 });
+    expect(action.kind).toBe("parallel_work");
+    if (action.kind === "parallel_work") {
+      expect(action.pullFromReady).toBe(20);
+      expect(action.progressItemIds).toContain(10);
+      expect(action.progressItemIds).toContain(20);
+    }
+  });
+
+  it("does NOT pull from Ready if my load is strictly highest", () => {
+    const worker: Worker = { id: 1, active_item_ids: [10, 11, 12], last_chosen_item_id: null };
+    const peer: Worker = { id: 2, active_item_ids: [50], last_chosen_item_id: null };
+    const items = [
+      mkInProgress(10, 1, 2, false),
+      mkInProgress(11, 1, 1, false),
+      mkInProgress(12, 1, 1, false),
+      mkInProgress(50, 2, 1, false),
+      mkReady(20),
+    ];
+    const action = decideWorkerAction({ worker, allWorkers: [worker, peer], items, config: baseConfig, currentTick: 5 });
+    expect(action.kind).toBe("parallel_work");
+    if (action.kind === "parallel_work") {
+      expect(action.pullFromReady).toBeUndefined();
+      expect(action.progressItemIds).toEqual(expect.arrayContaining([10, 11, 12]));
+      expect(action.progressItemIds.length).toBe(3);
+    }
+  });
+
+  it("with all my items blocked + start_new policy, pulls from Ready", () => {
+    const worker: Worker = { id: 1, active_item_ids: [10], last_chosen_item_id: null };
+    const items = [mkInProgress(10, 1, 2, true), mkReady(20)];
+    const action = decideWorkerAction({ worker, allWorkers: [worker], items, config: baseConfig, currentTick: 5 });
+    expect(action.kind).toBe("parallel_work");
+    if (action.kind === "parallel_work") {
+      expect(action.pullFromReady).toBe(20);
+      expect(action.progressItemIds).toEqual([20]);
+    }
   });
 
   it("with all my items blocked + wait policy, idles", () => {
-    const worker: Worker = { id: 1, active_item_ids: [10], last_chosen_item_id: 10 };
+    const worker: Worker = { id: 1, active_item_ids: [10], last_chosen_item_id: null };
     const items = [mkInProgress(10, 1, 2, true)];
     const action = decideWorkerAction({
       worker, allWorkers: [worker], items,
@@ -51,7 +101,7 @@ describe("worker decision tree", () => {
     expect(action.kind).toBe("idle");
   });
 
-  it("does not pull validation item that the worker authored", () => {
+  it("does not pull a validation item the worker authored", () => {
     const worker: Worker = { id: 1, active_item_ids: [], last_chosen_item_id: null };
     const items = [
       { ...mkInProgress(10, 1, 8, false), column: "validation" as const, current_worker_id: null },
@@ -66,7 +116,10 @@ describe("worker decision tree", () => {
       { ...mkInProgress(10, 2, 8, false), column: "validation" as const, current_worker_id: null },
     ];
     const action = decideWorkerAction({ worker, allWorkers: [worker], items, config: baseConfig, currentTick: 5 });
-    expect(action.kind).toBe("pull_validation");
-    if (action.kind === "pull_validation") expect(action.itemId).toBe(10);
+    expect(action.kind).toBe("parallel_work");
+    if (action.kind === "parallel_work") {
+      expect(action.pullValidation).toBe(10);
+      expect(action.progressItemIds).toEqual([10]);
+    }
   });
 });

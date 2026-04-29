@@ -2,7 +2,7 @@ import type { ExperimentConfig, Item, Worker, ColumnId } from "./types.js";
 import type { Prng } from "./prng.js";
 import { type EventQueue, popDueEvents } from "./events.js";
 import { decideWorkerAction, type WorkerAction } from "./worker.js";
-import { effectiveWorkHours } from "./multitasking.js";
+import { computeTickAllocation } from "./multitasking.js";
 import { sampleLogNormal } from "./distributions.js";
 
 export type TickAccounting = { working: number; switching: number; blocked: number; idle: number };
@@ -116,55 +116,91 @@ function applyAction(
   let itemsOut = items;
 
   switch (action.kind) {
-    case "work_on":
-    case "pull_validation":
+    case "parallel_work": {
+      // 1. Apply pulls (move items between columns / add to active list).
+      const pullCostPer = config.team.switch_cost_minutes / 60;
+      let pullCostHours = 0;
+
+      if (action.pullFromReady !== undefined) {
+        const pulledId = action.pullFromReady;
+        itemsOut = itemsOut.map((it) =>
+          it.id === pulledId
+            ? { ...it, column: "in_progress" as const, author_worker_id: worker.id, current_worker_id: worker.id, effort_done_hours: 0 }
+            : it,
+        );
+        workersOut = workersOut.map((w) =>
+          w.id === worker.id && !w.active_item_ids.includes(pulledId)
+            ? { ...w, active_item_ids: [...w.active_item_ids, pulledId], last_chosen_item_id: pulledId }
+            : w,
+        );
+        pullCostHours += pullCostPer;
+      }
+
+      if (action.pullValidation !== undefined) {
+        const pulledId = action.pullValidation;
+        itemsOut = itemsOut.map((it) =>
+          it.id === pulledId ? { ...it, current_worker_id: worker.id } : it,
+        );
+        workersOut = workersOut.map((w) =>
+          w.id === worker.id && !w.active_item_ids.includes(pulledId)
+            ? { ...w, active_item_ids: [...w.active_item_ids, pulledId], last_chosen_item_id: pulledId }
+            : w,
+        );
+        pullCostHours += pullCostPer;
+      }
+
+      // 2. Compute tick allocation across all unblocked active items.
+      const updatedWorker = workersOut.find((w) => w.id === worker.id)!;
+      const myItems = itemsOut.filter((it) => updatedWorker.active_item_ids.includes(it.id));
+      const myUnblocked = myItems.filter(
+        (it) => it.state === "in_column" && (it.column === "in_progress" || it.column === "validation"),
+      );
+      const progressingIds = new Set(action.progressItemIds);
+
+      const alloc = computeTickAllocation({
+        tickHours,
+        activeCarryCount: myItems.length,
+        progressingCount: myUnblocked.filter((it) => progressingIds.has(it.id)).length,
+        pullCostHours,
+        pacePenalty: config.team.pace_penalty,
+      });
+
+      // 3. Distribute progress.
+      if (alloc.perItemHours > 0) {
+        itemsOut = itemsOut.map((it) =>
+          progressingIds.has(it.id) && it.state === "in_column"
+            ? { ...it, effort_done_hours: it.effort_done_hours + alloc.perItemHours, current_worker_id: worker.id }
+            : it,
+        );
+      }
+
+      // 4. Time accounting.
+      acc.working += alloc.usefulHours;
+      acc.switching += Math.max(0, tickHours - alloc.usefulHours);
+
+      return { items: itemsOut, workers: workersOut };
+    }
     case "swarm_unblock": {
       const item = itemsOut.find((it) => it.id === action.itemId);
       if (!item) {
         acc.idle += tickHours;
         return { items: itemsOut, workers: workersOut };
       }
-      const switched = worker.last_chosen_item_id !== item.id;
-      const eff = effectiveWorkHours({
+      // Swarm: contribute progress to a peer's blocked item (preserves prior semantics).
+      const alloc = computeTickAllocation({
         tickHours,
-        switchedThisTick: switched,
-        switchCostMinutes: config.team.switch_cost_minutes,
-        activeItemCount: Math.max(1, worker.active_item_ids.length),
+        activeCarryCount: 1,
+        progressingCount: 1,
+        pullCostHours: 0,
         pacePenalty: config.team.pace_penalty,
       });
-      acc.working += eff;
-      acc.switching += tickHours - eff;
+      acc.working += alloc.usefulHours;
+      acc.switching += tickHours - alloc.usefulHours;
       itemsOut = itemsOut.map((it) =>
         it.id !== action.itemId
           ? it
-          : { ...it, effort_done_hours: it.effort_done_hours + eff, current_worker_id: worker.id },
+          : { ...it, effort_done_hours: it.effort_done_hours + alloc.usefulHours },
       );
-      if (action.kind === "pull_validation") {
-        workersOut = workersOut.map((w) =>
-          w.id === worker.id && !w.active_item_ids.includes(action.itemId)
-            ? { ...w, active_item_ids: [...w.active_item_ids, action.itemId], last_chosen_item_id: action.itemId }
-            : w,
-        );
-      } else {
-        workersOut = workersOut.map((w) => (w.id === worker.id ? { ...w, last_chosen_item_id: action.itemId } : w));
-      }
-      return { items: itemsOut, workers: workersOut };
-    }
-    case "pull_from_ready": {
-      const readyItem = itemsOut.find((it) => it.id === action.itemId && it.column === "ready");
-      if (!readyItem) {
-        acc.idle += tickHours;
-        return { items: itemsOut, workers: workersOut };
-      }
-      itemsOut = itemsOut.map((it) =>
-        it.id === action.itemId
-          ? { ...it, column: "in_progress" as const, author_worker_id: worker.id, current_worker_id: worker.id, effort_done_hours: 0 }
-          : it,
-      );
-      workersOut = workersOut.map((w) =>
-        w.id === worker.id ? { ...w, active_item_ids: [...w.active_item_ids, action.itemId], last_chosen_item_id: action.itemId } : w,
-      );
-      acc.switching += tickHours;
       return { items: itemsOut, workers: workersOut };
     }
     case "idle": {

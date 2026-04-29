@@ -2,9 +2,12 @@ import type { ExperimentConfig, Item, Worker } from "./types.js";
 import { columnHasCapacity, workerCanPull } from "./board.js";
 
 export type WorkerAction =
-  | { kind: "work_on"; itemId: number }
-  | { kind: "pull_from_ready"; itemId: number }
-  | { kind: "pull_validation"; itemId: number }
+  | {
+      kind: "parallel_work";
+      progressItemIds: number[];      // unblocked items that get progress this tick
+      pullFromReady?: number;          // optional: id of a Ready item to pull into in_progress
+      pullValidation?: number;         // optional: id of a peer Validation item to grab
+    }
   | { kind: "swarm_unblock"; itemId: number }
   | { kind: "idle" };
 
@@ -18,36 +21,63 @@ export function decideWorkerAction(args: {
   const { worker, items } = args;
 
   const myItems = items.filter((it) => worker.active_item_ids.includes(it.id));
-  const myUnblocked = myItems.filter((it) => it.state === "in_column" && (it.column === "in_progress" || it.column === "validation"));
+  const myUnblocked = myItems.filter(
+    (it) => it.state === "in_column" && (it.column === "in_progress" || it.column === "validation"),
+  );
   const myBlocked = myItems.filter((it) => it.state === "blocked");
+  const allMineBlocked = myItems.length > 0 && myBlocked.length === myItems.length;
 
+  // Case A: I have unblocked items I can progress.
   if (myUnblocked.length > 0) {
-    const picked = pickItemRoundRobin(myUnblocked, worker.last_chosen_item_id);
-    return { kind: "work_on", itemId: picked.id };
+    const progressIds = myUnblocked.map((it) => it.id);
+    // Optionally pull from Ready (one item this tick) if room and policy allows.
+    if (canPullFromReady(args)) {
+      const readyItem = items.find((it) => it.column === "ready");
+      if (readyItem) {
+        return {
+          kind: "parallel_work",
+          progressItemIds: [...progressIds, readyItem.id],
+          pullFromReady: readyItem.id,
+        };
+      }
+    }
+    return { kind: "parallel_work", progressItemIds: progressIds };
   }
 
-  if (myItems.length > 0 && myBlocked.length === myItems.length) {
+  // Case B: All my items are blocked (or I have none) — apply blocking_response.
+  if (allMineBlocked) {
     return resolveBlockingResponse(args);
   }
 
-  if (canPullFromReady(args)) {
-    const readyItem = items.find((it) => it.column === "ready");
-    if (readyItem) return { kind: "pull_from_ready", itemId: readyItem.id };
+  // Case C: I have no items at all. Try to pull from Ready, then Validation.
+  if (myItems.length === 0) {
+    if (canPullFromReady(args)) {
+      const readyItem = items.find((it) => it.column === "ready");
+      if (readyItem) {
+        return {
+          kind: "parallel_work",
+          progressItemIds: [readyItem.id],
+          pullFromReady: readyItem.id,
+        };
+      }
+    }
+    const validationCandidate = findValidationCandidate(items, worker.id);
+    if (validationCandidate) {
+      return {
+        kind: "parallel_work",
+        progressItemIds: [validationCandidate.id],
+        pullValidation: validationCandidate.id,
+      };
+    }
   }
-
-  const validationCandidate = items.find(
-    (it) => it.column === "validation" && it.author_worker_id !== worker.id && it.current_worker_id === null,
-  );
-  if (validationCandidate) return { kind: "pull_validation", itemId: validationCandidate.id };
 
   return { kind: "idle" };
 }
 
-function pickItemRoundRobin(unblocked: Item[], lastChosenItemId: number | null): Item {
-  if (unblocked.length === 1 || lastChosenItemId === null) return unblocked[0]!;
-  const candidates = unblocked.filter((it) => it.id !== lastChosenItemId);
-  if (candidates.length === 0) return unblocked[0]!;
-  return candidates[0]!;
+function findValidationCandidate(items: Item[], workerId: number): Item | undefined {
+  return items.find(
+    (it) => it.column === "validation" && it.author_worker_id !== workerId && it.current_worker_id === null,
+  );
 }
 
 function canPullFromReady(args: {
@@ -76,14 +106,24 @@ function resolveBlockingResponse(args: {
     case "start_new":
       if (canPullFromReady(args)) {
         const readyItem = items.find((it) => it.column === "ready");
-        if (readyItem) return { kind: "pull_from_ready", itemId: readyItem.id };
+        if (readyItem) {
+          return {
+            kind: "parallel_work",
+            progressItemIds: [readyItem.id],
+            pullFromReady: readyItem.id,
+          };
+        }
       }
       return { kind: "idle" };
     case "help_validate": {
-      const candidate = items.find(
-        (it) => it.column === "validation" && it.author_worker_id !== worker.id && it.current_worker_id === null,
-      );
-      if (candidate) return { kind: "pull_validation", itemId: candidate.id };
+      const candidate = findValidationCandidate(items, worker.id);
+      if (candidate) {
+        return {
+          kind: "parallel_work",
+          progressItemIds: [candidate.id],
+          pullValidation: candidate.id,
+        };
+      }
       return { kind: "idle" };
     }
     case "swarm_unblock": {
