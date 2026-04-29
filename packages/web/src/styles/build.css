@@ -1,0 +1,55 @@
+.build-page {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 36px 40px 80px;
+}
+.build-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  border-bottom: 1px solid var(--rule);
+  padding-bottom: 22px;
+  margin-bottom: 28px;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+.build-head h1 {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: clamp(26px, 4.5vw, 38px);
+  letter-spacing: -0.02em;
+}
+.build-head .actions { display: flex; gap: 10px; align-items: center; }
+.tab-bar { display: flex; gap: 0; border-bottom: 1px solid var(--rule); margin-bottom: 24px; }
+.tab-bar button {
+  background: transparent;
+  border: none;
+  padding: 12px 20px;
+  font-size: 13px;
+  color: var(--text-soft);
+  border-bottom: 2px solid transparent;
+}
+.tab-bar button.active { color: var(--text); border-bottom-color: var(--text); font-weight: 500; }
+.tab-panel {
+  background: var(--bg-paper);
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  padding: 24px 28px;
+}
+.tab-panel h2 {
+  font-family: var(--serif);
+  font-size: 20px;
+  margin-bottom: 16px;
+}
+.tab-panel .help {
+  font-size: 13px;
+  color: var(--text-soft);
+  margin-bottom: 18px;
+  max-width: 60ch;
+}
+@media (max-width: 760px) {
+  .build-page { padding: 22px 18px 60px; }
+  .tab-bar { overflow-x: auto; flex-wrap: nowrap; }
+  .tab-bar button { white-space: nowrap; }
+  .tab-panel { padding: 18px; }
+}
