@@ -1,0 +1,18 @@
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+[data-surface="paper"] {
+  background-image:
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+
+@media (max-width: 760px) {
+  [data-surface="paper"] { background-size: 16px 16px; }
+}

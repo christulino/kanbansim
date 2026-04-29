@@ -1,0 +1,49 @@
+:root {
+  --bg: #FAF6EC;
+  --bg-paper: #F4EEDC;
+  --bg-deep: #EBE3CC;
+  --grid: rgba(42, 31, 26, 0.07);
+  --grid-deep: rgba(42, 31, 26, 0.14);
+  --text: #2A1F1A;
+  --text-soft: #6B5D52;
+  --text-faint: #9A8A7A;
+  --accent: #1F6F6B;
+  --accent-deep: #134341;
+  --accent-soft: rgba(31, 111, 107, 0.10);
+  --warning: #C44834;
+  --warning-soft: rgba(196, 72, 52, 0.10);
+  --series-1: #1F6F6B;
+  --series-2: #C44834;
+  --series-3: #C99A3A;
+  --series-4: #6B7BA4;
+  --series-5: #8B6B9E;
+  --rule: rgba(42, 31, 26, 0.18);
+  --rule-soft: rgba(42, 31, 26, 0.10);
+  --serif: 'Fraunces', Georgia, 'Times New Roman', serif;
+  --sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --mono: 'JetBrains Mono', 'Menlo', monospace;
+  --hand: 'Caveat', cursive;
+}
+
+[data-theme="dark"] {
+  --bg: #1A1410;
+  --bg-paper: #221A14;
+  --bg-deep: #2B2018;
+  --grid: rgba(244, 238, 220, 0.06);
+  --grid-deep: rgba(244, 238, 220, 0.12);
+  --text: #F4EEDC;
+  --text-soft: #B8A99A;
+  --text-faint: #7A6B5C;
+  --accent: #4FB3AE;
+  --accent-deep: #6FCBC6;
+  --accent-soft: rgba(79, 179, 174, 0.14);
+  --warning: #E07A66;
+  --warning-soft: rgba(224, 122, 102, 0.14);
+  --series-1: #4FB3AE;
+  --series-2: #E07A66;
+  --series-3: #E0BA5E;
+  --series-4: #95A4C8;
+  --series-5: #B795C8;
+  --rule: rgba(244, 238, 220, 0.20);
+  --rule-soft: rgba(244, 238, 220, 0.10);
+}
