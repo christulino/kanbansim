@@ -1,0 +1,85 @@
+.landing {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 64px 40px 80px;
+}
+.landing-hero {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 56px;
+  align-items: start;
+  margin-bottom: 64px;
+}
+.landing-hero h1 {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: clamp(32px, 5vw, 52px);
+  line-height: 1.05;
+  letter-spacing: -0.025em;
+  margin-bottom: 22px;
+}
+.landing-hero h1 em { font-style: italic; color: var(--accent); }
+.landing-hero p {
+  font-size: 16px;
+  color: var(--text-soft);
+  line-height: 1.65;
+  margin-bottom: 16px;
+  max-width: 56ch;
+}
+.landing-hero .lead { color: var(--text); font-size: 17px; }
+.landing-hero-aside {
+  background: var(--bg-paper);
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  padding: 22px;
+  font-family: var(--sans);
+  color: var(--text-soft);
+  font-size: 13px;
+}
+.landing-hero-aside .label { margin-bottom: 12px; }
+
+.preset-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 22px;
+  margin-bottom: 56px;
+}
+.preset-card {
+  background: var(--bg-paper);
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  text-align: left;
+  font: inherit;
+  color: var(--text);
+  cursor: pointer;
+  transition: border-color 120ms ease-out, transform 120ms ease-out;
+}
+.preset-card:hover { border-color: var(--accent); transform: translateY(-1px); }
+.preset-card.active { border-color: var(--accent); background: var(--accent-soft); }
+.preset-card .label { font-size: 10px; }
+.preset-card h3 { font-family: var(--serif); font-size: 22px; font-weight: 500; }
+.preset-card .lesson { font-size: 13px; color: var(--text-soft); }
+.preset-card .cta { font-family: var(--mono); font-size: 11px; color: var(--accent); margin-top: auto; }
+
+.build-link {
+  display: inline-block;
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 18px;
+  color: var(--accent);
+  text-decoration: none;
+  border-bottom: 1px solid var(--accent);
+  padding-bottom: 2px;
+}
+
+.ambient-ucurve { display: flex; flex-direction: column; gap: 8px; }
+.ambient-meta { font-size: 10.5px; color: var(--text-faint); }
+
+@media (max-width: 760px) {
+  .landing { padding: 40px 18px 60px; }
+  .landing-hero { grid-template-columns: 1fr; gap: 28px; }
+}

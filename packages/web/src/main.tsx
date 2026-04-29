@@ -10,6 +10,7 @@ import "./styles/parameter.css";
 import "./styles/build.css";
 import "./styles/run.css";
 import "./styles/chart.css";
+import "./styles/landing.css";
 
 const root = document.getElementById("root");
 if (!root) throw new Error("#root not found");
