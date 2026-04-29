@@ -82,15 +82,26 @@ export function UCurveChart({ snapshot, sweep, productive_hours_per_day, totalRu
     if (snapshot.total_runs >= totalRunsExpected * 0.5 && points.length >= 3) {
       const minLead = points.reduce((acc, p) => (p.lt_days < acc.lt_days ? p : acc), points[0]!);
       const maxThroughput = points.reduce((acc, p) => (p.throughput > acc.throughput ? p : acc), points[0]!);
+
+      // Plot's defaults: marginTop=20, marginBottom=50 here, so the plot area is y=20..310 (height 290).
+      const PLOT_TOP = 20;
+      const PLOT_BOTTOM = 360 - 50;
+      const PLOT_H = PLOT_BOTTOM - PLOT_TOP;
+      const yForLead = (lt: number) => PLOT_TOP + (1 - lt / ltMax) * PLOT_H;
+      const yForThroughput = (tp: number) => PLOT_TOP + (1 - tp / tpMax) * PLOT_H;
+
       const ann = document.createElementNS(SVG_NS, "svg");
       ann.setAttribute("style", "position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;");
       ann.setAttribute("viewBox", "0 0 1100 360");
       const xFor = (v: number) => ((v - sweep.min) / (sweep.max - sweep.min)) * 980 + 60;
 
-      // Shortest lead time annotation (terracotta — matches the lead-time line)
+      // Shortest lead time annotation — placed just above the data point.
+      // If the point is near the top of the chart, flip it below to keep the label visible.
+      const ltY = yForLead(minLead.lt_days);
+      const ltLabelY = ltY < 50 ? ltY + 22 : ltY - 12;
       const ltLabel = document.createElementNS(SVG_NS, "text");
       ltLabel.setAttribute("x", String(xFor(minLead.x)));
-      ltLabel.setAttribute("y", "40");
+      ltLabel.setAttribute("y", String(ltLabelY));
       ltLabel.setAttribute("text-anchor", "middle");
       ltLabel.setAttribute("font-family", "Caveat, cursive");
       ltLabel.setAttribute("font-size", "20");
@@ -98,10 +109,16 @@ export function UCurveChart({ snapshot, sweep, productive_hours_per_day, totalRu
       ltLabel.textContent = `shortest lead time ≈ ${minLead.x.toFixed(0)}`;
       ann.appendChild(ltLabel);
 
-      // Highest throughput annotation (teal — matches throughput line). Place at a different y so they don't collide.
+      // Highest throughput annotation — placed just above its data point.
+      const tpY = yForThroughput(maxThroughput.throughput);
+      const tpLabelY = tpY < 50 ? tpY + 22 : tpY - 12;
+      // If the two labels are close in (x, y), nudge the throughput label down to avoid collision.
+      const xClose = Math.abs(xFor(minLead.x) - xFor(maxThroughput.x)) < 120;
+      const yClose = Math.abs(ltLabelY - tpLabelY) < 22;
+      const finalTpY = xClose && yClose ? tpLabelY + 24 : tpLabelY;
       const tpLabel = document.createElementNS(SVG_NS, "text");
       tpLabel.setAttribute("x", String(xFor(maxThroughput.x)));
-      tpLabel.setAttribute("y", "65");
+      tpLabel.setAttribute("y", String(finalTpY));
       tpLabel.setAttribute("text-anchor", "middle");
       tpLabel.setAttribute("font-family", "Caveat, cursive");
       tpLabel.setAttribute("font-size", "20");
