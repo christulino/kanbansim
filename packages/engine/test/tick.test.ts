@@ -6,7 +6,7 @@ import type { ExperimentConfig, Item, Worker } from "../src/types.js";
 import { createEventQueue } from "../src/events.js";
 
 const baseConfig: ExperimentConfig = {
-  team: { size: 1, productive_hours_per_day: 6, switch_cost_minutes: 15, pace_penalty: 0.05, worker_pick_policy: "round_robin", blocking_response: "start_new" },
+  team: { size: 1, productive_hours_per_day: 6, switch_cost_minutes: 15, worker_pick_policy: "round_robin", blocking_response: "start_new" },
   work: { arrival_rate_per_day: 0, effort_dist: { mu: 8, sigma: 0, skewness: 0 }, validation_effort: { kind: "fraction", fraction: 0.5 }, block_probability_per_day: 0, block_duration_dist: { mu: 4, sigma: 2, skewness: 0 } },
   board: { wip_ready: null, wip_in_progress: 5, wip_validation: 3 },
   simulation: { sim_days: 1, tick_size_hours: 1 },
@@ -27,17 +27,18 @@ describe("processTick (parallel-work model)", () => {
     expect(result.items.find((it) => it.id === 1)!.effort_done_hours).toBeCloseTo(1);
   });
 
-  it("with 4 unblocked items, splits the hour evenly across them", () => {
+  it("with 4 unblocked items, splits the hour evenly across them after switch overhead", () => {
     const items = [ipItem(1, 0), ipItem(2, 0), ipItem(3, 0), ipItem(4, 0)];
     const worker: Worker = { id: 1, active_item_ids: [1, 2, 3, 4], last_chosen_item_id: null };
     const result = processTick({ currentTick: 0, items, workers: [worker], events: createEventQueue(), config: baseConfig, rng: createPrng(1n) });
-    // pace_factor = 1 - 0.05*3 = 0.85; per-item = 0.85 / 4 = 0.2125
+    // 4 items, 15min switch, 6h day → daily overhead = 3 * 0.25 = 0.75h; per-tick = 0.75/6 = 0.125h
+    // useful per tick = 0.875h; per-item = 0.875 / 4 = 0.21875
     for (const id of [1, 2, 3, 4]) {
-      expect(result.items.find((it) => it.id === id)!.effort_done_hours).toBeCloseTo(0.2125);
+      expect(result.items.find((it) => it.id === id)!.effort_done_hours).toBeCloseTo(0.21875);
     }
   });
 
-  it("blocked items don't get progress but still cost pace_factor", () => {
+  it("blocked items don't get progress and don't add to switch overhead", () => {
     const item1 = ipItem(1, 0);
     const item2: Item = { ...ipItem(2, 0), state: "blocked", blocked_until_tick: 100 };
     const item3 = ipItem(3, 0);
@@ -48,10 +49,11 @@ describe("processTick (parallel-work model)", () => {
       config: { ...baseConfig, work: { ...baseConfig.work, block_probability_per_day: 0 } },
       rng: createPrng(1n),
     });
-    // pace_factor = 1 - 0.05*2 = 0.9 (carry of 3); progressing = 2; per-item = 0.9 / 2 = 0.45
-    expect(result.items.find((it) => it.id === 1)!.effort_done_hours).toBeCloseTo(0.45);
+    // progressing = 2 (item 2 blocked); daily overhead = 1 * 0.25 = 0.25h; per-tick = 0.25/6 = 0.0417h
+    // useful = 0.9583; per-item = 0.4792
+    expect(result.items.find((it) => it.id === 1)!.effort_done_hours).toBeCloseTo(0.4792, 3);
     expect(result.items.find((it) => it.id === 2)!.effort_done_hours).toBe(0);
-    expect(result.items.find((it) => it.id === 3)!.effort_done_hours).toBeCloseTo(0.45);
+    expect(result.items.find((it) => it.id === 3)!.effort_done_hours).toBeCloseTo(0.4792, 3);
   });
 
   it("moves item to Validation when effort is reached", () => {
@@ -70,9 +72,10 @@ describe("processTick (parallel-work model)", () => {
     const items = [ipItem(1, 0), ipItem(2, 0)];
     const worker: Worker = { id: 1, active_item_ids: [1, 2], last_chosen_item_id: null };
     const result = processTick({ currentTick: 0, items, workers: [worker], events: createEventQueue(), config: baseConfig, rng: createPrng(1n) });
-    // pace_factor = 1 - 0.05 = 0.95; useful_hours = 0.95
-    expect(result.timeAccounting.get(1)!.working).toBeCloseTo(0.95);
-    expect(result.timeAccounting.get(1)!.switching).toBeCloseTo(0.05);
+    // 2 items, 15min switch, 6h day → daily overhead = 1 * 0.25 = 0.25h; per-tick = 0.0417h
+    // useful_hours = 1 - 0.0417 = 0.9583; switching = 0.0417
+    expect(result.timeAccounting.get(1)!.working).toBeCloseTo(0.9583, 3);
+    expect(result.timeAccounting.get(1)!.switching).toBeCloseTo(0.0417, 3);
   });
 
   it("a 1-day item finishes in ~1 day at WIP=1", () => {

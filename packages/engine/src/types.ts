@@ -18,7 +18,6 @@ export type ExperimentConfig = {
     size: number;
     productive_hours_per_day: number;
     switch_cost_minutes: number;
-    pace_penalty: number;
     worker_pick_policy: WorkerPickPolicy;
     blocking_response: BlockingResponse;
   };

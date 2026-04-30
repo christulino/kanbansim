@@ -1,27 +1,32 @@
 // Per-tick parallel-work allocation.
 //
-// Workers do not pick a single item per tick; they spread productive hours
-// across all unblocked active items they're carrying. Blocked items still
-// count toward the carry (context overhead) but get no progress this tick.
+// Workers spread their productive hours across all unblocked active items.
+// The only multitasking tax is the switch cost: visiting N items in a day
+// incurs (N-1) transitions, each costing switch_cost_minutes. That overhead
+// is taken off the day's productive hours; the remainder is split evenly
+// across the items being progressed.
 
 export type TickAllocation = {
-  paceFactor: number;        // 0.1..1
-  usefulHours: number;       // total useful work this tick after pace + pull cost
-  perItemHours: number;      // hours added to each progressing item
+  switchOverheadHours: number;  // total switch overhead absorbed this tick
+  usefulHours: number;          // productive hours added to items this tick
+  perItemHours: number;         // per-item progress this tick
 };
 
 export function computeTickAllocation(args: {
   tickHours: number;
-  activeCarryCount: number;     // unblocked + blocked items I'm carrying (after any pull)
+  productiveHoursPerDay: number;
   progressingCount: number;     // unblocked items getting progress this tick
-  pullCostHours: number;        // one-time overhead for any pulls performed this tick
-  pacePenalty: number;          // 0..1, e.g. 0.05 = 5%/extra
+  switchCostHours: number;      // hours per switch (e.g. 15min = 0.25)
 }): TickAllocation {
-  const carry = Math.max(1, args.activeCarryCount);
-  const rawPace = 1 - args.pacePenalty * (carry - 1);
-  const paceFactor = Math.max(0.1, rawPace);
-  const beforePace = Math.max(0, args.tickHours - args.pullCostHours);
-  const usefulHours = beforePace * paceFactor;
-  const perItemHours = args.progressingCount > 0 ? usefulHours / args.progressingCount : 0;
-  return { paceFactor, usefulHours, perItemHours };
+  const n = args.progressingCount;
+  if (n <= 0) return { switchOverheadHours: 0, usefulHours: 0, perItemHours: 0 };
+
+  // Per day: visiting N items requires N-1 transitions.
+  const dailySwitchOverhead = Math.max(0, n - 1) * args.switchCostHours;
+  // Spread the day's overhead evenly across its productive hours, then scale to this tick.
+  const overheadPerHour = dailySwitchOverhead / Math.max(1, args.productiveHoursPerDay);
+  const switchOverheadThisTick = Math.min(args.tickHours, overheadPerHour * args.tickHours);
+  const usefulHours = Math.max(0, args.tickHours - switchOverheadThisTick);
+  const perItemHours = usefulHours / n;
+  return { switchOverheadHours: switchOverheadThisTick, usefulHours, perItemHours };
 }

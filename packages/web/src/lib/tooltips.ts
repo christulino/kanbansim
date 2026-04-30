@@ -1,8 +1,7 @@
 export const TOOLTIPS: Record<string, string> = {
   "team.size": "Number of generalist workers on the team. Each can perform any role; peer review prevents self-validation.",
   "team.productive_hours_per_day": "Hours per workday spent on simulated work. The default 6 reflects realistic ratio of meetings/admin to focus time.",
-  "team.switch_cost_minutes": "Minutes lost when a worker switches between active items in the same hour. Real ramp-up cost — not retroactive.",
-  "team.pace_penalty": "Multiplicative slowdown per extra active item. 5% means juggling 4 items runs at 0.85× speed regardless of switching.",
+  "team.switch_cost_minutes": "Minutes lost when transitioning between items. Per day, a worker pays (N-1) × switch_cost in overhead, where N is items being progressed. The only multitasking tax in the model.",
   "team.blocking_response": "What a worker does when all their items are blocked: wait, start a new one, help validate someone else's, or swarm the blocker.",
 
   "work.arrival_rate_per_day": "Mean items arriving per working day, sampled from a Poisson process.",

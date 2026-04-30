@@ -2,16 +2,16 @@
   "name": "regression_baseline",
   "description": "Moderate-everything config. Baseline summary stats are recorded; unintended drift fails the test.",
   "config": {
-    "team": { "size": 5, "productive_hours_per_day": 6, "switch_cost_minutes": 15, "pace_penalty": 0.05, "worker_pick_policy": "round_robin", "blocking_response": "start_new" },
+    "team": { "size": 5, "productive_hours_per_day": 6, "switch_cost_minutes": 15, "worker_pick_policy": "round_robin", "blocking_response": "start_new" },
     "work": { "arrival_rate_per_day": 4, "effort_dist": { "mu": 8, "sigma": 3.5, "skewness": 1.2 }, "validation_effort": { "kind": "fraction", "fraction": 0.3 }, "block_probability_per_day": 0.04, "block_duration_dist": { "mu": 4, "sigma": 2, "skewness": 0.5 } },
     "board": { "wip_ready": null, "wip_in_progress": 5, "wip_validation": 3 },
     "simulation": { "sim_days": 130, "tick_size_hours": 1 }
   },
   "seed": "987654321",
   "baseline": {
-    "items_completed": 228,
-    "throughput_per_day": 1.7538461538461538,
-    "median_lead_time_hours": 252,
-    "p95_lead_time_hours": 425
+    "items_completed": 248,
+    "throughput_per_day": 1.9076923076923078,
+    "median_lead_time_hours": 219,
+    "p95_lead_time_hours": 392
   }
 }

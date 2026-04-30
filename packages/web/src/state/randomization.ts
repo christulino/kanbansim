@@ -13,7 +13,6 @@ const INTEGER_PATHS = new Set<string>([
 
 const PROBABILITY_PATHS = new Set<string>([
   "work.block_probability_per_day",
-  "team.pace_penalty",
 ]);
 
 const PARAM_SEED_XOR = 0xdeadbeefcafef00dn;

@@ -23,7 +23,6 @@ export function ConfigStrip({ state }: Props) {
           <dt>Size</dt><dd>{val("team.size", String(config.team.size))}</dd>
           <dt>Productive hrs/day</dt><dd>{val("team.productive_hours_per_day", config.team.productive_hours_per_day.toFixed(1))}</dd>
           <dt>Switch cost</dt><dd>{val("team.switch_cost_minutes", `${config.team.switch_cost_minutes} min`)}</dd>
-          <dt>Pace penalty</dt><dd>{val("team.pace_penalty", `${(config.team.pace_penalty * 100).toFixed(0)}%/extra`)}</dd>
         </dl>
       </div>
       <div>

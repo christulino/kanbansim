@@ -118,9 +118,6 @@ function applyAction(
   switch (action.kind) {
     case "parallel_work": {
       // 1. Apply pulls (move items between columns / add to active list).
-      const pullCostPer = config.team.switch_cost_minutes / 60;
-      let pullCostHours = 0;
-
       if (action.pullFromReady !== undefined) {
         const pulledId = action.pullFromReady;
         itemsOut = itemsOut.map((it) =>
@@ -133,7 +130,6 @@ function applyAction(
             ? { ...w, active_item_ids: [...w.active_item_ids, pulledId], last_chosen_item_id: pulledId }
             : w,
         );
-        pullCostHours += pullCostPer;
       }
 
       if (action.pullValidation !== undefined) {
@@ -146,7 +142,6 @@ function applyAction(
             ? { ...w, active_item_ids: [...w.active_item_ids, pulledId], last_chosen_item_id: pulledId }
             : w,
         );
-        pullCostHours += pullCostPer;
       }
 
       // 2. Compute tick allocation across all unblocked active items.
@@ -159,10 +154,9 @@ function applyAction(
 
       const alloc = computeTickAllocation({
         tickHours,
-        activeCarryCount: myItems.length,
+        productiveHoursPerDay: config.team.productive_hours_per_day,
         progressingCount: myUnblocked.filter((it) => progressingIds.has(it.id)).length,
-        pullCostHours,
-        pacePenalty: config.team.pace_penalty,
+        switchCostHours: config.team.switch_cost_minutes / 60,
       });
 
       // 3. Distribute progress.
@@ -189,10 +183,9 @@ function applyAction(
       // Swarm: contribute progress to a peer's blocked item (preserves prior semantics).
       const alloc = computeTickAllocation({
         tickHours,
-        activeCarryCount: 1,
+        productiveHoursPerDay: config.team.productive_hours_per_day,
         progressingCount: 1,
-        pullCostHours: 0,
-        pacePenalty: config.team.pace_penalty,
+        switchCostHours: config.team.switch_cost_minutes / 60,
       });
       acc.working += alloc.usefulHours;
       acc.switching += tickHours - alloc.usefulHours;

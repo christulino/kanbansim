@@ -3,7 +3,7 @@ import { runSimulation, type ExperimentConfig } from "../src/index.js";
 import { readFileSync } from "node:fs";
 
 const config: ExperimentConfig = {
-  team: { size: 3, productive_hours_per_day: 6, switch_cost_minutes: 15, pace_penalty: 0.05, worker_pick_policy: "round_robin", blocking_response: "start_new" },
+  team: { size: 3, productive_hours_per_day: 6, switch_cost_minutes: 15, worker_pick_policy: "round_robin", blocking_response: "start_new" },
   work: { arrival_rate_per_day: 3, effort_dist: { mu: 6, sigma: 2, skewness: 1 }, validation_effort: { kind: "fraction", fraction: 0.3 }, block_probability_per_day: 0.04, block_duration_dist: { mu: 4, sigma: 2, skewness: 0.5 } },
   board: { wip_ready: null, wip_in_progress: 4, wip_validation: 2 },
   simulation: { sim_days: 60, tick_size_hours: 1 },
