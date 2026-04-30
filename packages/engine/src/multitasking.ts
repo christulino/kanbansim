@@ -17,6 +17,7 @@ export function computeTickAllocation(args: {
   productiveHoursPerDay: number;
   progressingCount: number;     // unblocked items getting progress this tick
   switchCostHours: number;      // hours per switch (e.g. 15min = 0.25)
+  extraDisruptionHours?: number; // one-time disruptions this tick (e.g. block events on the worker's items)
 }): TickAllocation {
   const n = args.progressingCount;
   if (n <= 0) return { switchOverheadHours: 0, usefulHours: 0, perItemHours: 0 };
@@ -25,8 +26,9 @@ export function computeTickAllocation(args: {
   const dailySwitchOverhead = Math.max(0, n - 1) * args.switchCostHours;
   // Spread the day's overhead evenly across its productive hours, then scale to this tick.
   const overheadPerHour = dailySwitchOverhead / Math.max(1, args.productiveHoursPerDay);
-  const switchOverheadThisTick = Math.min(args.tickHours, overheadPerHour * args.tickHours);
-  const usefulHours = Math.max(0, args.tickHours - switchOverheadThisTick);
+  const baseOverhead = overheadPerHour * args.tickHours;
+  const totalOverhead = Math.min(args.tickHours, baseOverhead + Math.max(0, args.extraDisruptionHours ?? 0));
+  const usefulHours = Math.max(0, args.tickHours - totalOverhead);
   const perItemHours = usefulHours / n;
-  return { switchOverheadHours: switchOverheadThisTick, usefulHours, perItemHours };
+  return { switchOverheadHours: totalOverhead, usefulHours, perItemHours };
 }

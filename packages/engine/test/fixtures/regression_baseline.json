@@ -9,9 +9,9 @@
   },
   "seed": "987654321",
   "baseline": {
-    "items_completed": 248,
-    "throughput_per_day": 1.9076923076923078,
-    "median_lead_time_hours": 219,
-    "p95_lead_time_hours": 392
+    "items_completed": 230,
+    "throughput_per_day": 1.7692307692307692,
+    "median_lead_time_hours": 218,
+    "p95_lead_time_hours": 426
   }
 }

@@ -37,10 +37,13 @@ export function processTick(args: {
     }
   }
 
-  // 2. Sample new blocks for active items.
+  // 2. Sample new blocks for active items. Track which workers got disrupted so they pay
+  // a one-time switch_cost on this tick — a block tears the worker out of the item they
+  // were progressing, costing context-load time before they can re-orient.
   const tickHours = config.simulation.tick_size_hours;
   const productiveHoursPerDay = config.team.productive_hours_per_day;
   const blocksPerHour = config.work.block_probability_per_day / Math.max(1, productiveHoursPerDay);
+  const blocksByWorker = new Map<number, number>();
   for (let i = 0; i < items.length; i++) {
     const it = items[i]!;
     if ((it.column === "in_progress" || it.column === "validation") && it.state === "in_column") {
@@ -48,6 +51,9 @@ export function processTick(args: {
         const durationHours = Math.max(1, Math.round(sampleLogNormal(rng, config.work.block_duration_dist)));
         items[i] = { ...it, state: "blocked", blocked_until_tick: currentTick + durationHours };
         args.events.schedule({ tick: currentTick + durationHours, kind: "unblock", itemId: it.id });
+        if (it.current_worker_id !== null) {
+          blocksByWorker.set(it.current_worker_id, (blocksByWorker.get(it.current_worker_id) ?? 0) + 1);
+        }
       }
     }
   }
@@ -60,7 +66,7 @@ export function processTick(args: {
   for (const workerId of order) {
     const worker = workers.find((w) => w.id === workerId)!;
     const action = decideWorkerAction({ worker, allWorkers: workers, items, config, currentTick });
-    ({ items, workers } = applyAction(action, worker, items, workers, config, accounting));
+    ({ items, workers } = applyAction(action, worker, items, workers, config, accounting, blocksByWorker));
   }
 
   // 4. Detect completions and column transitions.
@@ -110,9 +116,13 @@ function applyAction(
   workers: Worker[],
   config: ExperimentConfig,
   accounting: Map<number, TickAccounting>,
+  blocksByWorker: Map<number, number>,
 ): { items: Item[]; workers: Worker[] } {
   const acc = accounting.get(worker.id)!;
   const tickHours = config.simulation.tick_size_hours;
+  const switchCostHours = config.team.switch_cost_minutes / 60;
+  const blockCount = blocksByWorker.get(worker.id) ?? 0;
+  const blockDisruptionHours = blockCount * switchCostHours;
   let workersOut = workers;
   let itemsOut = items;
 
@@ -157,7 +167,8 @@ function applyAction(
         tickHours,
         productiveHoursPerDay: config.team.productive_hours_per_day,
         progressingCount: myUnblocked.filter((it) => progressingIds.has(it.id)).length,
-        switchCostHours: config.team.switch_cost_minutes / 60,
+        switchCostHours,
+        extraDisruptionHours: blockDisruptionHours,
       });
 
       // 3. Distribute progress.
@@ -199,8 +210,16 @@ function applyAction(
     }
     case "idle": {
       const hasItems = worker.active_item_ids.length > 0;
-      if (hasItems) acc.blocked += tickHours;
-      else acc.idle += tickHours;
+      if (hasItems) {
+        // Worker has items but they're all blocked. If a block fired this tick, attribute
+        // some of the worker's time to "switching" — the disruption of being torn off the
+        // task — with the remainder counted as "blocked" (waiting for the dependency).
+        const disruption = Math.min(tickHours, blockDisruptionHours);
+        acc.switching += disruption;
+        acc.blocked += tickHours - disruption;
+      } else {
+        acc.idle += tickHours;
+      }
       return { items: itemsOut, workers: workersOut };
     }
   }
