@@ -72,17 +72,22 @@ export function HistogramChart({ snapshot, sweep, productive_hours_per_day }: Pr
   }
 
   const observedMaxLT = Math.max(...boxes.map((b) => b.p90));
+  const observedMinLT = Math.min(...boxes.map((b) => b.p10));
   if (observedMaxLT > stickyMaxRef.current) stickyMaxRef.current = observedMaxLT * 1.05;
   const yMax = stickyMaxRef.current;
+  // Floor the y-axis at ~80% of the smallest p10 across cells (clamped at 0). When the
+  // shortest-lead-time cell sits well above zero, this preserves the visual fluctuations
+  // instead of stranding all the boxes near the top of the chart.
+  const yMin = Math.max(0, observedMinLT * 0.8);
 
   const xScale = (v: number) => M_LEFT + ((v - sweep.min) / (sweep.max - sweep.min)) * (W - M_LEFT - M_RIGHT);
-  const yScale = (v: number) => M_TOP + (1 - v / yMax) * (H - M_TOP - M_BOTTOM);
+  const yScale = (v: number) => M_TOP + (1 - (v - yMin) / Math.max(0.0001, yMax - yMin)) * (H - M_TOP - M_BOTTOM);
 
   // Box width: half the gap between adjacent sweep cells, with a sane minimum.
   const cellPx = (W - M_LEFT - M_RIGHT) / Math.max(1, (sweep.max - sweep.min) / sweep.step);
   const boxW = Math.max(8, Math.min(40, cellPx * 0.55));
 
-  const yTicks = niceTicks(0, yMax, 5);
+  const yTicks = niceTicks(yMin, yMax, 5);
 
   return (
     <div>

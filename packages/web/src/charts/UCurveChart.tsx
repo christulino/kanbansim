@@ -37,8 +37,18 @@ export function UCurveChart({ snapshot, sweep, productive_hours_per_day, totalRu
     points.sort((a, b) => a.x - b.x);
     if (points.length === 0) return;
 
-    const ltMax = Math.max(...points.map((p) => p.lt_hi)) * 1.1 || 1;
-    const tpMax = Math.max(...points.map((p) => p.tp_hi)) * 1.1 || 1;
+    // Tighten y-domains to the data so the variation is visible. Pad ~10% above the max
+    // and bring the floor up to ~80% of the lower-band minimum (clamped to 0). When a sweep
+    // value's lead time is dramatically higher than the rest, this still keeps the full range
+    // visible but doesn't waste the bottom of the chart on empty space.
+    const ltHi = Math.max(...points.map((p) => p.lt_hi));
+    const ltLo = Math.min(...points.map((p) => p.lt_lo));
+    const ltMax = (ltHi || 1) * 1.1;
+    const ltMin = Math.max(0, ltLo * 0.85);
+    const tpHi = Math.max(...points.map((p) => p.tp_hi));
+    const tpLo = Math.min(...points.map((p) => p.tp_lo));
+    const tpMax = (tpHi || 1) * 1.1;
+    const tpMin = Math.max(0, tpLo * 0.85);
 
     const fig = Plot.plot({
       width: 1100,
@@ -48,7 +58,7 @@ export function UCurveChart({ snapshot, sweep, productive_hours_per_day, totalRu
       marginBottom: 50,
       style: { background: "transparent", color: "var(--text-soft)", fontFamily: "JetBrains Mono, monospace", fontSize: "11px" },
       x: { label: sweep.variable, domain: [sweep.min, sweep.max], grid: false },
-      y: { label: "Lead time (days)", domain: [0, ltMax] },
+      y: { label: "Lead time (days)", domain: [ltMin, ltMax] },
       marks: [
         Plot.areaY(points, { x: "x", y1: "lt_lo", y2: "lt_hi", fill: "var(--series-2)", fillOpacity: 0.15, curve: "monotone-x" }),
         Plot.lineY(points, { x: "x", y: "lt_days", stroke: "var(--series-2)", strokeWidth: 2.5, curve: "monotone-x" }),
@@ -65,7 +75,7 @@ export function UCurveChart({ snapshot, sweep, productive_hours_per_day, totalRu
       marginBottom: 50,
       style: { background: "transparent", color: "var(--text-soft)", fontFamily: "JetBrains Mono, monospace", fontSize: "11px", position: "absolute", top: "0", left: "0", pointerEvents: "none" },
       x: { domain: [sweep.min, sweep.max], axis: null },
-      y: { axis: "right", label: "Throughput (items/day)", domain: [0, tpMax] },
+      y: { axis: "right", label: "Throughput (items/day)", domain: [tpMin, tpMax] },
       marks: [
         Plot.areaY(points, { x: "x", y1: "tp_lo", y2: "tp_hi", fill: "var(--series-1)", fillOpacity: 0.15, curve: "monotone-x" }),
         Plot.lineY(points, { x: "x", y: "throughput", stroke: "var(--series-1)", strokeWidth: 2.5, curve: "monotone-x" }),
@@ -87,8 +97,8 @@ export function UCurveChart({ snapshot, sweep, productive_hours_per_day, totalRu
       const PLOT_TOP = 20;
       const PLOT_BOTTOM = 360 - 50;
       const PLOT_H = PLOT_BOTTOM - PLOT_TOP;
-      const yForLead = (lt: number) => PLOT_TOP + (1 - lt / ltMax) * PLOT_H;
-      const yForThroughput = (tp: number) => PLOT_TOP + (1 - tp / tpMax) * PLOT_H;
+      const yForLead = (lt: number) => PLOT_TOP + (1 - (lt - ltMin) / Math.max(0.0001, ltMax - ltMin)) * PLOT_H;
+      const yForThroughput = (tp: number) => PLOT_TOP + (1 - (tp - tpMin) / Math.max(0.0001, tpMax - tpMin)) * PLOT_H;
 
       const ann = document.createElementNS(SVG_NS, "svg");
       ann.setAttribute("style", "position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;");
