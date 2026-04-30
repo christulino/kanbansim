@@ -1,4 +1,4 @@
-import { useMemo, useRef } from "react";
+import { useMemo, useRef, useState } from "react";
 import type { AggregatorSnapshot } from "../orchestrator/aggregator.js";
 import type { SweepSpec } from "../state/urlCodec.js";
 
@@ -28,8 +28,12 @@ const M_RIGHT = 20;
 const M_TOP = 20;
 const M_BOTTOM = 50;
 
+type HoverState = { screenX: number; screenY: number; box: BoxStats };
+
 export function HistogramChart({ snapshot, sweep, productive_hours_per_day }: Props) {
   const stickyMaxRef = useRef(1);
+  const hostRef = useRef<HTMLDivElement | null>(null);
+  const [hovered, setHovered] = useState<HoverState | null>(null);
 
   const boxes = useMemo<BoxStats[]>(() => {
     if (!snapshot || snapshot.cells.size === 0) return [];
@@ -89,8 +93,19 @@ export function HistogramChart({ snapshot, sweep, productive_hours_per_day }: Pr
 
   const yTicks = niceTicks(yMin, yMax, 5);
 
+  function showHover(box: BoxStats, evt: React.MouseEvent) {
+    if (!hostRef.current) return;
+    const target = (evt.currentTarget as SVGElement).getBoundingClientRect();
+    const host = hostRef.current.getBoundingClientRect();
+    setHovered({
+      screenX: target.left + target.width / 2 - host.left,
+      screenY: target.top - host.top,
+      box,
+    });
+  }
+
   return (
-    <div>
+    <div ref={hostRef} className="chart-host">
       <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" style={{ width: "100%", height: "auto" }}>
         {/* Y grid lines + labels */}
         {yTicks.map((t) => (
@@ -175,13 +190,35 @@ export function HistogramChart({ snapshot, sweep, productive_hours_per_day }: Pr
                 stroke={strokeColor}
                 strokeWidth={2}
               />
-              <title>
-                {`x=${b.x}  median=${b.median.toFixed(1)}d  p25=${b.p25.toFixed(1)}d  p75=${b.p75.toFixed(1)}d  p10=${b.p10.toFixed(1)}d  p90=${b.p90.toFixed(1)}d  n=${b.count}`}
-              </title>
+              {/* Invisible hover target spanning the full whisker range */}
+              <rect
+                x={cx - boxW / 2 - 2}
+                y={yScale(b.p90) - 4}
+                width={boxW + 4}
+                height={Math.max(1, yScale(b.p10) - yScale(b.p90) + 8)}
+                fill="transparent"
+                style={{ cursor: "crosshair" }}
+                onMouseEnter={(e) => showHover(b, e)}
+                onMouseLeave={() => setHovered(null)}
+              />
             </g>
           );
         })}
       </svg>
+
+      {hovered && (
+        <div className="chart-tooltip" style={{ left: hovered.screenX, top: hovered.screenY }}>
+          <div className="tt-title">{sweep.variable} = {hovered.box.x}{hovered.box.isOptimal ? "  (lowest median)" : ""}</div>
+          <div className="tt-row"><span className="tt-key">Median</span><span className="tt-val">{hovered.box.median.toFixed(1)} d</span></div>
+          <div className="tt-row"><span className="tt-key">p25 – p75</span><span className="tt-val">{hovered.box.p25.toFixed(1)} – {hovered.box.p75.toFixed(1)} d</span></div>
+          <div className="tt-row"><span className="tt-key">p10 – p90</span><span className="tt-val">{hovered.box.p10.toFixed(1)} – {hovered.box.p90.toFixed(1)} d</span></div>
+          <div className="tt-row"><span className="tt-key">min – max</span><span className="tt-val">{hovered.box.min.toFixed(1)} – {hovered.box.max.toFixed(1)} d</span></div>
+          <div className="tt-row" style={{ marginTop: 4, paddingTop: 4, borderTop: "1px solid rgba(244,238,220,0.18)" }}>
+            <span className="tt-key">Sample size</span><span className="tt-val">{hovered.box.count.toLocaleString()} items</span>
+          </div>
+        </div>
+      )}
+
       <div className="hist-meta mono">
         Each box: lead-time distribution at one sweep value. Filled ends of whiskers = p10/p90. Box = p25–p75 (IQR). Inner line = median.
         Highlighted box = cell with the lowest mean median lead time.

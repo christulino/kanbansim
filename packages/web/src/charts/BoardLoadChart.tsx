@@ -1,4 +1,4 @@
-import { useMemo, useRef } from "react";
+import { useMemo, useRef, useState } from "react";
 import type { AggregatorSnapshot } from "../orchestrator/aggregator.js";
 import type { SweepSpec } from "../state/urlCodec.js";
 import type { ColumnId } from "@kanbansim/engine";
@@ -32,9 +32,12 @@ const M_TOP = 20;
 const M_BOTTOM = 50;
 
 type Bar = { x: number; means: Record<ColumnId, number>; total: number };
+type HoverState = { screenX: number; screenY: number; bar: Bar };
 
 export function BoardLoadChart({ snapshot, sweep }: Props) {
   const stickyMaxRef = useRef(1);
+  const hostRef = useRef<HTMLDivElement | null>(null);
+  const [hovered, setHovered] = useState<HoverState | null>(null);
 
   const bars = useMemo<Bar[]>(() => {
     if (!snapshot) return [];
@@ -49,6 +52,21 @@ export function BoardLoadChart({ snapshot, sweep }: Props) {
     out.sort((a, b) => a.x - b.x);
     return out;
   }, [snapshot]);
+
+  // Per-category peaks: which sweep cell maximizes each column's average count?
+  const peaks = useMemo<Record<ColumnId, { x: number; value: number } | null>>(() => {
+    const init = { backlog: null, ready: null, in_progress: null, validation: null, done: null } as Record<ColumnId, { x: number; value: number } | null>;
+    if (bars.length === 0) return init;
+    for (const col of COLUMNS) {
+      let best: { x: number; value: number } | null = null;
+      for (const b of bars) {
+        const v = b.means[col];
+        if (best === null || v > best.value) best = { x: b.x, value: v };
+      }
+      init[col] = best;
+    }
+    return init;
+  }, [bars]);
 
   if (!sweep) {
     return <div className="card-loading">No sweep variable selected. Set one in Build → Monte Carlo to see board load.</div>;
@@ -70,8 +88,19 @@ export function BoardLoadChart({ snapshot, sweep }: Props) {
 
   const yTicks = niceTicks(0, yMax, 5);
 
+  function showHover(bar: Bar, evt: React.MouseEvent) {
+    if (!hostRef.current) return;
+    const target = (evt.currentTarget as SVGElement).getBoundingClientRect();
+    const host = hostRef.current.getBoundingClientRect();
+    setHovered({
+      screenX: target.left + target.width / 2 - host.left,
+      screenY: target.top - host.top,
+      bar,
+    });
+  }
+
   return (
-    <div>
+    <div ref={hostRef} className="chart-host">
       <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" style={{ width: "100%", height: "auto" }}>
         {/* Y grid + labels */}
         {yTicks.map((t) => (
@@ -87,6 +116,9 @@ export function BoardLoadChart({ snapshot, sweep }: Props) {
         {bars.map((b) => {
           const cx = xScale(b.x);
           let cumLower = 0;
+          // Invisible full-bar overlay used as the hover target so any segment of the column triggers the tooltip.
+          const yTopFull = yScale(b.total);
+          const yBotFull = yScale(0);
           return (
             <g key={`bar-${b.x}`}>
               {COLUMNS.map((col) => {
@@ -104,11 +136,19 @@ export function BoardLoadChart({ snapshot, sweep }: Props) {
                     height={Math.max(0.5, yBot - yTop)}
                     fill={COLORS[col]}
                     fillOpacity={0.85}
-                  >
-                    <title>{`${LABELS[col]}: avg ${value.toFixed(2)} items at ${sweep.variable}=${b.x}`}</title>
-                  </rect>
+                  />
                 );
               })}
+              <rect
+                x={cx - barW / 2}
+                y={yTopFull}
+                width={barW}
+                height={Math.max(1, yBotFull - yTopFull)}
+                fill="transparent"
+                style={{ cursor: "crosshair" }}
+                onMouseEnter={(e) => showHover(b, e)}
+                onMouseLeave={() => setHovered(null)}
+              />
             </g>
           );
         })}
@@ -159,6 +199,22 @@ export function BoardLoadChart({ snapshot, sweep }: Props) {
         </text>
       </svg>
 
+      {hovered && (
+        <div className="chart-tooltip" style={{ left: hovered.screenX, top: hovered.screenY }}>
+          <div className="tt-title">{sweep.variable} = {hovered.bar.x}</div>
+          {COLUMNS.map((col) => (
+            <div key={col} className="tt-row">
+              <span className="tt-key">{LABELS[col]}</span>
+              <span className="tt-val">{hovered.bar.means[col].toFixed(2)}</span>
+            </div>
+          ))}
+          <div className="tt-row" style={{ marginTop: 4, paddingTop: 4, borderTop: "1px solid rgba(244,238,220,0.18)" }}>
+            <span className="tt-key">Total</span>
+            <span className="tt-val">{hovered.bar.total.toFixed(2)}</span>
+          </div>
+        </div>
+      )}
+
       <div className="cfd-legend">
         {COLUMNS.map((col) => (
           <span key={col}>
@@ -166,6 +222,20 @@ export function BoardLoadChart({ snapshot, sweep }: Props) {
             {LABELS[col]}
           </span>
         ))}
+      </div>
+
+      <div className="peaks-strip">
+        <span className="peak-label">Highest of each:</span>
+        {COLUMNS.map((col) => {
+          const p = peaks[col];
+          if (!p) return null;
+          return (
+            <span key={col}>
+              <span className="cfd-swatch" style={{ background: COLORS[col], marginRight: 4 }} />
+              <span>{LABELS[col]}: <span className="peak-val">{p.value.toFixed(1)}</span> @ {sweep.variable.split(".").pop()}={p.x}</span>
+            </span>
+          );
+        })}
       </div>
     </div>
   );

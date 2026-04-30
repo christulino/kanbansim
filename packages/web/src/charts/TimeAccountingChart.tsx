@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useRef, useState } from "react";
 import type { AggregatorSnapshot } from "../orchestrator/aggregator.js";
 import type { SweepSpec } from "../state/urlCodec.js";
 
@@ -30,8 +30,12 @@ const M_TOP = 20;
 const M_BOTTOM = 50;
 
 type Slice = { x: number; pct: Record<Seg, number> };
+type HoverState = { svgX: number; screenX: number; screenY: number; slice: Slice };
 
 export function TimeAccountingChart({ snapshot, sweep }: Props) {
+  const hostRef = useRef<HTMLDivElement | null>(null);
+  const svgRef = useRef<SVGSVGElement | null>(null);
+  const [hovered, setHovered] = useState<HoverState | null>(null);
   const slices = useMemo<Slice[]>(() => {
     if (!snapshot) return [];
     const out: Slice[] = [];
@@ -91,9 +95,32 @@ export function TimeAccountingChart({ snapshot, sweep }: Props) {
   // Y ticks at 0%, 25%, 50%, 75%, 100%
   const yTicks = [0, 0.25, 0.5, 0.75, 1];
 
+  function handleMove(evt: React.MouseEvent<SVGRectElement>) {
+    if (!svgRef.current || !hostRef.current) return;
+    const svgRect = svgRef.current.getBoundingClientRect();
+    const hostRect = hostRef.current.getBoundingClientRect();
+    // Translate screen coords back into the SVG's viewBox coordinate space.
+    const xInSvg = ((evt.clientX - svgRect.left) / svgRect.width) * W;
+    // Map SVG x back to a sweep value, then snap to the nearest known slice.
+    const sweepValue = sweep!.min + ((xInSvg - M_LEFT) / (W - M_LEFT - M_RIGHT)) * (sweep!.max - sweep!.min);
+    let nearest = slices[0]!;
+    let bestDist = Math.abs(nearest.x - sweepValue);
+    for (const s of slices) {
+      const d = Math.abs(s.x - sweepValue);
+      if (d < bestDist) { nearest = s; bestDist = d; }
+    }
+    const slicePixelX = ((xScale(nearest.x) / W) * svgRect.width) + svgRect.left - hostRect.left;
+    setHovered({
+      svgX: xScale(nearest.x),
+      screenX: slicePixelX,
+      screenY: svgRect.top - hostRect.top,
+      slice: nearest,
+    });
+  }
+
   return (
-    <div>
-      <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" style={{ width: "100%", height: "auto" }}>
+    <div ref={hostRef} className="chart-host">
+      <svg ref={svgRef} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" style={{ width: "100%", height: "auto" }}>
         {/* Y grid + labels */}
         {yTicks.map((t) => (
           <g key={`y-${t}`}>
@@ -141,7 +168,49 @@ export function TimeAccountingChart({ snapshot, sweep }: Props) {
         >
           {sweep.variable.toUpperCase()}
         </text>
+
+        {/* Hover guideline (drawn on top of the bands) */}
+        {hovered && (
+          <line
+            x1={hovered.svgX}
+            x2={hovered.svgX}
+            y1={M_TOP}
+            y2={H - M_BOTTOM}
+            stroke="var(--text)"
+            strokeWidth={1.5}
+            strokeDasharray="3 3"
+            opacity="0.7"
+            pointerEvents="none"
+          />
+        )}
+
+        {/* Mouse capture rect — sits over the plot area to drive the hover line */}
+        <rect
+          x={M_LEFT}
+          y={M_TOP}
+          width={W - M_LEFT - M_RIGHT}
+          height={H - M_TOP - M_BOTTOM}
+          fill="transparent"
+          style={{ cursor: "crosshair" }}
+          onMouseMove={handleMove}
+          onMouseLeave={() => setHovered(null)}
+        />
       </svg>
+
+      {hovered && (
+        <div className="chart-tooltip" style={{ left: hovered.screenX, top: hovered.screenY }}>
+          <div className="tt-title">{sweep.variable} = {hovered.slice.x}</div>
+          {bottomUp.slice().reverse().map((seg) => (
+            <div key={seg} className="tt-row">
+              <span className="tt-key">
+                <span style={{ display: "inline-block", width: 9, height: 9, marginRight: 6, background: COLORS[seg], verticalAlign: "-1px", borderRadius: 1 }} />
+                {LABELS[seg]}
+              </span>
+              <span className="tt-val">{(hovered.slice.pct[seg] * 100).toFixed(1)}%</span>
+            </div>
+          ))}
+        </div>
+      )}
 
       <div className="time-legend">
         {bottomUp.slice().reverse().map((seg) => (
