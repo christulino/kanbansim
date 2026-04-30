@@ -53,7 +53,7 @@
   padding: 26px 32px 24px;
   position: relative;
   margin-bottom: 28px;
-  overflow: hidden;
+  overflow: visible;
 }
 .card .label {
   font-family: var(--mono);
@@ -112,7 +112,7 @@
   line-height: 1.55;
   white-space: nowrap;
   pointer-events: none;
-  z-index: 60;
+  z-index: 1000;
   box-shadow: 0 2px 10px rgba(0,0,0,0.18);
   transform: translate(-50%, calc(-100% - 10px));
 }

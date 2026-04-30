@@ -20,6 +20,7 @@ export function computeSummary(
       p95_lead_time_hours: 0,
       max_lead_time_hours: 0,
       items_completed: 0,
+      items_arrived: 0,
     };
   }
   const leadTimes = completed.map((c) => c.lead_time_hours);
@@ -30,5 +31,6 @@ export function computeSummary(
     p95_lead_time_hours: percentile(leadTimes, 0.95),
     max_lead_time_hours: Math.max(...leadTimes),
     items_completed: completed.length,
+    items_arrived: 0,    // overridden by runSimulation with the actual arrived count
   };
 }

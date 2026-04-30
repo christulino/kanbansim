@@ -58,8 +58,11 @@ export function runSimulation(config: ExperimentConfig, seed: bigint): RunResult
         a.hours_idle += acc.idle;
       }
     }
-    const counts: Record<ColumnId, number> = { backlog: 0, ready: 0, in_progress: 0, validation: 0, done: 0 };
-    for (const it of items) counts[it.column]++;
+    // Pre-arrival items are intentionally hidden — only items whose `arrived` flag is set count toward the board.
+    const counts: Record<ColumnId, number> = { backlog: 0, in_progress: 0, validation: 0, done: 0 };
+    for (const it of items) {
+      if (it.arrived) counts[it.column]++;
+    }
     cfd.push({ tick, counts });
   }
 
@@ -74,11 +77,14 @@ export function runSimulation(config: ExperimentConfig, seed: bigint): RunResult
       validation_started_tick: null,
     }));
 
+  const itemsArrived = items.filter((it) => it.arrived).length;
+  const baseSummary = computeSummary(completed, config.simulation.sim_days, productiveHoursPerDay);
+
   return {
     config, seed,
     completed_items: completed,
     cfd,
     time_accounting: Array.from(accumulator.values()),
-    summary: computeSummary(completed, config.simulation.sim_days, productiveHoursPerDay),
+    summary: { ...baseSummary, items_arrived: itemsArrived },
   };
 }

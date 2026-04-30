@@ -27,10 +27,11 @@ export function processTick(args: {
   let items = [...args.items];
   let workers = args.workers.map((w) => ({ ...w }));
 
-  // 1. Resolve due events.
+  // 1. Resolve due events. Arrivals flip an item's `arrived` flag from false to true; the
+  // item stays in the Backlog column but becomes visible to the chart and pullable by workers.
   for (const event of popDueEvents(args.events, currentTick)) {
     if (event.kind === "arrival") {
-      items = items.map((it) => (it.id === event.itemId && it.column === "backlog" ? { ...it, column: "ready" as ColumnId } : it));
+      items = items.map((it) => (it.id === event.itemId ? { ...it, arrived: true } : it));
     } else if (event.kind === "unblock") {
       items = items.map((it) => (it.id === event.itemId ? { ...it, state: "in_column" as const, blocked_until_tick: null } : it));
     }
@@ -118,8 +119,8 @@ function applyAction(
   switch (action.kind) {
     case "parallel_work": {
       // 1. Apply pulls (move items between columns / add to active list).
-      if (action.pullFromReady !== undefined) {
-        const pulledId = action.pullFromReady;
+      if (action.pullFromBacklog !== undefined) {
+        const pulledId = action.pullFromBacklog;
         itemsOut = itemsOut.map((it) =>
           it.id === pulledId
             ? { ...it, column: "in_progress" as const, author_worker_id: worker.id, current_worker_id: worker.id, effort_done_hours: 0 }

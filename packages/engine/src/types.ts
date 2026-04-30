@@ -29,7 +29,6 @@ export type ExperimentConfig = {
     block_duration_dist: DistributionSpec;
   };
   board: {
-    wip_ready: number | null;
     wip_in_progress: number | null;
     wip_validation: number | null;
   };
@@ -39,7 +38,7 @@ export type ExperimentConfig = {
   };
 };
 
-export type ColumnId = "backlog" | "ready" | "in_progress" | "validation" | "done";
+export type ColumnId = "backlog" | "in_progress" | "validation" | "done";
 
 export type ItemState = "in_column" | "blocked";
 
@@ -50,9 +49,10 @@ export type Item = {
   validation_effort_hours: number;
   effort_done_hours: number;
   column: ColumnId;
+  arrived: boolean;                    // true once the arrival event has fired; pre-arrival items are hidden from charts and pull policy
   state: ItemState;
-  author_worker_id: number | null;     // worker who took it from Ready into In Progress
-  current_worker_id: number | null;    // worker actively progressing it (may be null in Backlog/Ready/Done)
+  author_worker_id: number | null;     // worker who pulled it from Backlog into In Progress
+  current_worker_id: number | null;    // worker actively progressing it (may be null in Backlog/Done)
   done_tick: number | null;
   blocked_until_tick: number | null;
 };
@@ -96,5 +96,6 @@ export type RunResult = {
     p95_lead_time_hours: number;
     max_lead_time_hours: number;
     items_completed: number;
+    items_arrived: number;     // total items that entered Backlog over the sim window
   };
 };

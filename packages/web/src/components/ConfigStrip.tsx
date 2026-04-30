@@ -37,7 +37,6 @@ export function ConfigStrip({ state }: Props) {
       <div>
         <div className="group-title">Board</div>
         <dl>
-          <dt>Ready WIP</dt><dd>{val("board.wip_ready", config.board.wip_ready === null ? "—" : String(config.board.wip_ready))}</dd>
           <dt>In Progress WIP</dt><dd>{val("board.wip_in_progress", String(config.board.wip_in_progress ?? "—"))}</dd>
           <dt>Validation WIP</dt><dd>{val("board.wip_validation", String(config.board.wip_validation ?? "—"))}</dd>
           <dt>Blocked policy</dt><dd>{config.team.blocking_response}</dd>

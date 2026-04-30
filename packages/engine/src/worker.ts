@@ -5,7 +5,7 @@ export type WorkerAction =
   | {
       kind: "parallel_work";
       progressItemIds: number[];      // unblocked items that get progress this tick
-      pullFromReady?: number;          // optional: id of a Ready item to pull into in_progress
+      pullFromBacklog?: number;        // optional: id of an arrived Backlog item to pull into in_progress
       pullValidation?: number;         // optional: id of a peer Validation item to grab
     }
   | { kind: "swarm_unblock"; itemId: number }
@@ -31,13 +31,13 @@ export function decideWorkerAction(args: {
   if (myUnblocked.length > 0) {
     const progressIds = myUnblocked.map((it) => it.id);
     // Optionally pull from Ready (one item this tick) if room and policy allows.
-    if (canPullFromReady(args)) {
-      const readyItem = items.find((it) => it.column === "ready");
+    if (canPullFromBacklog(args)) {
+      const readyItem = items.find((it) => it.column === "backlog" && it.arrived);
       if (readyItem) {
         return {
           kind: "parallel_work",
           progressItemIds: [...progressIds, readyItem.id],
-          pullFromReady: readyItem.id,
+          pullFromBacklog: readyItem.id,
         };
       }
     }
@@ -51,13 +51,13 @@ export function decideWorkerAction(args: {
 
   // Case C: I have no items at all. Try to pull from Ready, then Validation.
   if (myItems.length === 0) {
-    if (canPullFromReady(args)) {
-      const readyItem = items.find((it) => it.column === "ready");
+    if (canPullFromBacklog(args)) {
+      const readyItem = items.find((it) => it.column === "backlog" && it.arrived);
       if (readyItem) {
         return {
           kind: "parallel_work",
           progressItemIds: [readyItem.id],
-          pullFromReady: readyItem.id,
+          pullFromBacklog: readyItem.id,
         };
       }
     }
@@ -80,14 +80,14 @@ function findValidationCandidate(items: Item[], workerId: number): Item | undefi
   );
 }
 
-function canPullFromReady(args: {
+function canPullFromBacklog(args: {
   worker: Worker;
   allWorkers: Worker[];
   items: Item[];
   config: ExperimentConfig;
 }): boolean {
   const { worker, allWorkers, items, config } = args;
-  if (!items.some((it) => it.column === "ready")) return false;
+  if (!items.some((it) => it.column === "backlog" && it.arrived)) return false;
   if (!columnHasCapacity(items, "in_progress", config.board.wip_in_progress)) return false;
   return workerCanPull(allWorkers, worker.id);
 }
@@ -104,13 +104,13 @@ function resolveBlockingResponse(args: {
     case "wait":
       return { kind: "idle" };
     case "start_new":
-      if (canPullFromReady(args)) {
-        const readyItem = items.find((it) => it.column === "ready");
+      if (canPullFromBacklog(args)) {
+        const readyItem = items.find((it) => it.column === "backlog" && it.arrived);
         if (readyItem) {
           return {
             kind: "parallel_work",
             progressItemIds: [readyItem.id],
-            pullFromReady: readyItem.id,
+            pullFromBacklog: readyItem.id,
           };
         }
       }

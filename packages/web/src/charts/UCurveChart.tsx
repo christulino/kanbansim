@@ -10,7 +10,7 @@ type Props = {
   totalRunsExpected: number;
 };
 
-type CellPoint = { x: number; items: number; lt_days: number; ic_lo: number; ic_hi: number; lt_lo: number; lt_hi: number };
+type CellPoint = { x: number; items: number; arrived: number; unfinished: number; lt_days: number; lt_lo: number; lt_hi: number };
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 
@@ -28,8 +28,9 @@ export function UCurveChart({ snapshot, sweep, productive_hours_per_day, totalRu
       points.push({
         x: sv,
         items: c.mean_items_completed,
+        arrived: c.mean_items_arrived,
+        unfinished: c.mean_items_unfinished,
         lt_days: c.mean_median_lead_time / productive_hours_per_day,
-        ic_lo: c.p05_items_completed, ic_hi: c.p95_items_completed,
         lt_lo: c.p05_median_lead_time / productive_hours_per_day,
         lt_hi: c.p95_median_lead_time / productive_hours_per_day,
       });
@@ -45,10 +46,12 @@ export function UCurveChart({ snapshot, sweep, productive_hours_per_day, totalRu
     const ltLo = Math.min(...points.map((p) => p.lt_lo));
     const ltMax = (ltHi || 1) * 1.1;
     const ltMin = Math.max(0, ltLo * 0.85);
-    const icHi = Math.max(...points.map((p) => p.ic_hi));
-    const icLo = Math.min(...points.map((p) => p.ic_lo));
-    const icMax = (icHi || 1) * 1.1;
-    const icMin = Math.max(0, icLo * 0.85);
+    // Right axis spans 0 → max(arrived) so the completed (bottom) and unfinished (top) bands
+    // fit cleanly. Anchored at 0 because "items completed" zero is meaningful — the stack
+    // visually shows what the team got through vs. what piled up.
+    const arrivedMax = Math.max(...points.map((p) => p.arrived));
+    const icMax = (arrivedMax || 1) * 1.1;
+    const icMin = 0;
 
     const fig = Plot.plot({
       width: 1100,
@@ -75,12 +78,19 @@ export function UCurveChart({ snapshot, sweep, productive_hours_per_day, totalRu
       marginBottom: 50,
       style: { background: "transparent", color: "var(--text-soft)", fontFamily: "JetBrains Mono, monospace", fontSize: "11px", position: "absolute", top: "0", left: "0", pointerEvents: "none" },
       x: { domain: [sweep.min, sweep.max], axis: null },
-      y: { axis: "right", label: "Items completed (per run)", domain: [icMin, icMax] },
+      y: { axis: "right", label: "Items per run", domain: [icMin, icMax] },
       marks: [
-        Plot.areaY(points, { x: "x", y1: "ic_lo", y2: "ic_hi", fill: "var(--series-1)", fillOpacity: 0.15, curve: "monotone-x" }),
+        // Completed band: filled from 0 up to mean_items_completed. Solid teal.
+        Plot.areaY(points, { x: "x", y1: () => 0, y2: "items", fill: "var(--series-1)", fillOpacity: 0.45, curve: "monotone-x" }),
+        // Unfinished band: filled from items_completed up to items_arrived. Warning hue.
+        Plot.areaY(points, { x: "x", y1: "items", y2: "arrived", fill: "var(--warning)", fillOpacity: 0.32, curve: "monotone-x" }),
+        // Items arrived ceiling line — usually flat (constant arrival rate × sim_days), drawn faint dashed.
+        Plot.lineY(points, { x: "x", y: "arrived", stroke: "var(--warning)", strokeWidth: 1, strokeDasharray: "4,3", curve: "monotone-x" }),
+        // Items completed line — what the team actually got through.
         Plot.lineY(points, { x: "x", y: "items", stroke: "var(--series-1)", strokeWidth: 2.5, curve: "monotone-x" }),
         Plot.dot(points, { x: "x", y: "items", fill: "var(--series-1)", r: 3 }),
         Plot.text(points.slice(-1), { x: "x", y: "items", text: () => "Items completed", dx: 8, dy: -6, fill: "var(--series-1)", textAnchor: "start", fontFamily: "Inter", fontSize: 12, fontWeight: 500 }),
+        Plot.text(points.slice(-1), { x: "x", y: "arrived", text: () => "Items arrived", dx: 8, dy: -6, fill: "var(--warning)", textAnchor: "start", fontFamily: "Inter", fontSize: 11, fontWeight: 500 }),
       ],
     });
 

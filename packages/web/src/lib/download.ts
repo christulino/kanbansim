@@ -58,13 +58,15 @@ function loadImage(src: string): Promise<HTMLImageElement> {
 }
 
 export function snapshotToCsv(snapshot: AggregatorSnapshot, productive_hours_per_day: number): string {
-  const header = ["sweep_value", "run_count", "mean_items_completed", "p05_items_completed", "p95_items_completed", "mean_median_lead_time_days", "p05_median_lead_time_days", "p95_median_lead_time_days"];
+  const header = ["sweep_value", "run_count", "mean_items_completed", "mean_items_arrived", "mean_items_unfinished", "p05_items_completed", "p95_items_completed", "mean_median_lead_time_days", "p05_median_lead_time_days", "p95_median_lead_time_days"];
   const rows = [header.join(",")];
   for (const c of [...snapshot.cells.values()].sort((a, b) => a.sweep_value - b.sweep_value)) {
     rows.push([
       c.sweep_value,
       c.run_count,
       c.mean_items_completed.toFixed(2),
+      c.mean_items_arrived.toFixed(2),
+      c.mean_items_unfinished.toFixed(2),
       c.p05_items_completed.toFixed(2),
       c.p95_items_completed.toFixed(2),
       (c.mean_median_lead_time / productive_hours_per_day).toFixed(4),
@@ -80,6 +82,8 @@ export function snapshotToJson(snapshot: AggregatorSnapshot, state: ExperimentSt
     sweep_value: c.sweep_value,
     run_count: c.run_count,
     mean_items_completed: c.mean_items_completed,
+    mean_items_arrived: c.mean_items_arrived,
+    mean_items_unfinished: c.mean_items_unfinished,
     p05_items_completed: c.p05_items_completed,
     p95_items_completed: c.p95_items_completed,
     mean_median_lead_time_hours: c.mean_median_lead_time,

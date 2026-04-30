@@ -15,6 +15,8 @@ export type CellStats = {
   mean_items_completed: number;
   p05_items_completed: number;
   p95_items_completed: number;
+  mean_items_arrived: number;
+  mean_items_unfinished: number;
   mean_median_lead_time: number;
   p05_median_lead_time: number;
   p95_median_lead_time: number;
@@ -36,6 +38,7 @@ export type AggregatorOptions = { leadTimeSampleCap?: number };
 type CellInternal = {
   sweep_value: number;
   items_completed_samples: number[];
+  items_arrived_samples: number[];
   median_lead_time_samples: number[];
   lead_time_samples: number[];
   representative_cfd: CfdSnapshot[] | null;
@@ -56,11 +59,12 @@ export function createAggregator(options: AggregatorOptions = {}) {
       cell = {
         sweep_value,
         items_completed_samples: [],
+        items_arrived_samples: [],
         median_lead_time_samples: [],
         lead_time_samples: [],
         representative_cfd: null,
         time_accounting_totals: { hours_working: 0, hours_switching: 0, hours_blocked: 0, hours_idle: 0 },
-        column_count_sums: { backlog: 0, ready: 0, in_progress: 0, validation: 0, done: 0 },
+        column_count_sums: { backlog: 0, in_progress: 0, validation: 0, done: 0 },
         column_count_observations: 0,
         run_count: 0,
       };
@@ -69,6 +73,7 @@ export function createAggregator(options: AggregatorOptions = {}) {
     cell.run_count++;
     totalRuns++;
     cell.items_completed_samples.push(result.summary.items_completed);
+    cell.items_arrived_samples.push(result.summary.items_arrived);
     cell.median_lead_time_samples.push(result.summary.median_lead_time_hours);
     cell.representative_cfd = result.cfd;
     for (const ta of result.time_accounting) {
@@ -79,7 +84,6 @@ export function createAggregator(options: AggregatorOptions = {}) {
     }
     for (const snap of result.cfd) {
       cell.column_count_sums.backlog += snap.counts.backlog;
-      cell.column_count_sums.ready += snap.counts.ready;
       cell.column_count_sums.in_progress += snap.counts.in_progress;
       cell.column_count_sums.validation += snap.counts.validation;
       cell.column_count_sums.done += snap.counts.done;
@@ -106,6 +110,8 @@ export function createAggregator(options: AggregatorOptions = {}) {
         mean_items_completed: mean(c.items_completed_samples),
         p05_items_completed: percentile(c.items_completed_samples, 0.05),
         p95_items_completed: percentile(c.items_completed_samples, 0.95),
+        mean_items_arrived: mean(c.items_arrived_samples),
+        mean_items_unfinished: Math.max(0, mean(c.items_arrived_samples) - mean(c.items_completed_samples)),
         mean_median_lead_time: mean(c.median_lead_time_samples),
         p05_median_lead_time: percentile(c.median_lead_time_samples, 0.05),
         p95_median_lead_time: percentile(c.median_lead_time_samples, 0.95),
@@ -114,7 +120,6 @@ export function createAggregator(options: AggregatorOptions = {}) {
         time_accounting_totals: { ...c.time_accounting_totals },
         column_count_means: {
           backlog: c.column_count_sums.backlog / obs,
-          ready: c.column_count_sums.ready / obs,
           in_progress: c.column_count_sums.in_progress / obs,
           validation: c.column_count_sums.validation / obs,
           done: c.column_count_sums.done / obs,

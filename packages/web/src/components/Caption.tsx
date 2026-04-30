@@ -2,8 +2,8 @@ import type { ExperimentStatus } from "../orchestrator/useExperiment.js";
 
 export const CAPTIONS = {
   ucurve: {
-    running: "Each point is a sweep value; the band tightens as more runs land. The sweet spot will become obvious before the cliff does.",
-    complete: "A clean U-curve. Below the optimum, the team is starved — workers idle when items block. Above it, multitasking tax dominates and lead time blows up. The sweet spot is broader than most teams assume — that's the manager's permission to experiment.",
+    running: "Lead time on the left axis (terracotta line). Right axis stacks two bands: items completed (teal, bottom) and items unfinished (terracotta-shaded, top). Together they sum to items arrived. As the bands settle, the curves get sharper.",
+    complete: "Read three signals together. The lead-time line shows how fast finished items moved (strict definition — completed only). The teal band is what the team got through. The terracotta band on top is wasted potential — work that arrived but never finished. At low WIP the team is starved; at high WIP the multitasking tax shrinks the teal band even as items keep arriving.",
   },
   cfd: {
     running: "Each bar is one sweep value. Heights reveal how items distribute across the board on average. As more runs land, the bars settle.",

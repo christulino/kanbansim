@@ -11,8 +11,7 @@ export function BoardTab({ state, update }: Props) {
   return (
     <section className="tab-panel" role="tabpanel">
       <h2>Board</h2>
-      <p className="help">Five fixed columns: Backlog → Ready → In Progress → Validation → Done. Set per-column WIP limits below. "—" means unlimited.</p>
-      <ParameterInput label="Ready WIP" path="board.wip_ready" value={b.wip_ready} step={1} min={0} onChange={(v) => update("board.wip_ready", isFinite(v) ? Math.max(0, Math.round(v)) : null)} />
+      <p className="help">Four fixed columns: Backlog → In Progress → Validation → Done. Set per-column WIP limits below; Backlog is uncapped (it's the queue). "—" means unlimited.</p>
       <ParameterInput label="In Progress WIP" path="board.wip_in_progress" value={b.wip_in_progress} step={1} min={1} onChange={(v) => update("board.wip_in_progress", Math.max(1, Math.round(v)))} />
       <ParameterInput label="Validation WIP" path="board.wip_validation" value={b.wip_validation} step={1} min={1} onChange={(v) => update("board.wip_validation", Math.max(1, Math.round(v)))} />
     </section>

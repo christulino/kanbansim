@@ -7,7 +7,7 @@
       "config": {
         "team": { "size": 1, "productive_hours_per_day": 6, "switch_cost_minutes": 15, "worker_pick_policy": "round_robin", "blocking_response": "wait" },
         "work": { "arrival_rate_per_day": 1, "effort_dist": { "mu": 4, "sigma": 0, "skewness": 0 }, "validation_effort": { "kind": "fraction", "fraction": 0.3 }, "block_probability_per_day": 0, "block_duration_dist": { "mu": 2, "sigma": 1, "skewness": 0 } },
-        "board": { "wip_ready": null, "wip_in_progress": 1, "wip_validation": 1 },
+        "board": { "wip_in_progress": 1, "wip_validation": 1 },
         "simulation": { "sim_days": 30, "tick_size_hours": 1 }
       },
       "seed": "1"
@@ -17,7 +17,7 @@
       "config": {
         "team": { "size": 5, "productive_hours_per_day": 6, "switch_cost_minutes": 15, "worker_pick_policy": "round_robin", "blocking_response": "start_new" },
         "work": { "arrival_rate_per_day": 8, "effort_dist": { "mu": 6, "sigma": 2, "skewness": 1 }, "validation_effort": { "kind": "fraction", "fraction": 0.3 }, "block_probability_per_day": 0, "block_duration_dist": { "mu": 4, "sigma": 2, "skewness": 0 } },
-        "board": { "wip_ready": null, "wip_in_progress": null, "wip_validation": null },
+        "board": { "wip_in_progress": null, "wip_validation": null },
         "simulation": { "sim_days": 30, "tick_size_hours": 1 }
       },
       "seed": "2"
@@ -27,7 +27,7 @@
       "config": {
         "team": { "size": 3, "productive_hours_per_day": 6, "switch_cost_minutes": 15, "worker_pick_policy": "round_robin", "blocking_response": "wait" },
         "work": { "arrival_rate_per_day": 0, "effort_dist": { "mu": 4, "sigma": 1, "skewness": 0 }, "validation_effort": { "kind": "fraction", "fraction": 0.3 }, "block_probability_per_day": 0, "block_duration_dist": { "mu": 2, "sigma": 1, "skewness": 0 } },
-        "board": { "wip_ready": null, "wip_in_progress": 3, "wip_validation": 2 },
+        "board": { "wip_in_progress": 3, "wip_validation": 2 },
         "simulation": { "sim_days": 10, "tick_size_hours": 1 }
       },
       "seed": "3"

@@ -5,7 +5,6 @@ const INTEGER_PATHS = new Set<string>([
   "team.size",
   "team.productive_hours_per_day",
   "team.switch_cost_minutes",
-  "board.wip_ready",
   "board.wip_in_progress",
   "board.wip_validation",
   "simulation.sim_days",

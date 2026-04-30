@@ -5,7 +5,7 @@
   "config": {
     "team": { "size": 5, "productive_hours_per_day": 6, "switch_cost_minutes": 15, "worker_pick_policy": "round_robin", "blocking_response": "start_new" },
     "work": { "arrival_rate_per_day": 1.0, "effort_dist": { "mu": 24, "sigma": 8, "skewness": 0.5 }, "validation_effort": { "kind": "fraction", "fraction": 0.3 }, "block_probability_per_day": 0.04, "block_duration_dist": { "mu": 4, "sigma": 2, "skewness": 0.5 } },
-    "board": { "wip_ready": null, "wip_in_progress": 20, "wip_validation": 5 },
+    "board": { "wip_in_progress": 20, "wip_validation": 5 },
     "simulation": { "sim_days": 130, "tick_size_hours": 1 }
   },
   "sweep": { "variable": "team.switch_cost_minutes", "min": 0, "max": 60, "step": 5 }

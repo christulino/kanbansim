@@ -14,6 +14,7 @@ function mkInProgress(id: number, authorId: number, effortDone: number, blocked:
   return {
     ...createItem({ id, arrival_tick: 0, effort_required_hours: 8, validation_effort_hours: 3 }),
     column: "in_progress",
+    arrived: true,
     author_worker_id: authorId,
     current_worker_id: authorId,
     effort_done_hours: effortDone,
@@ -22,7 +23,7 @@ function mkInProgress(id: number, authorId: number, effortDone: number, blocked:
 }
 
 function mkReady(id: number): Item {
-  return { ...createItem({ id, arrival_tick: 0, effort_required_hours: 8, validation_effort_hours: 3 }), column: "ready" };
+  return { ...createItem({ id, arrival_tick: 0, effort_required_hours: 8, validation_effort_hours: 3 }), arrived: true };
 }
 
 describe("worker decision tree (parallel-work model)", () => {
@@ -38,11 +39,11 @@ describe("worker decision tree (parallel-work model)", () => {
     if (action.kind === "parallel_work") {
       expect(action.progressItemIds).toEqual(expect.arrayContaining([10, 11]));
       expect(action.progressItemIds).not.toContain(12);
-      expect(action.pullFromReady).toBeUndefined();
+      expect(action.pullFromBacklog).toBeUndefined();
     }
   });
 
-  it("pulls from Ready when room and not at highest load (parallel_work + pullFromReady)", () => {
+  it("pulls from Ready when room and not at highest load (parallel_work + pullFromBacklog)", () => {
     const worker: Worker = { id: 1, active_item_ids: [10], last_chosen_item_id: null };
     const peer: Worker = { id: 2, active_item_ids: [50, 51], last_chosen_item_id: null };
     const items = [
@@ -54,7 +55,7 @@ describe("worker decision tree (parallel-work model)", () => {
     const action = decideWorkerAction({ worker, allWorkers: [worker, peer], items, config: baseConfig, currentTick: 5 });
     expect(action.kind).toBe("parallel_work");
     if (action.kind === "parallel_work") {
-      expect(action.pullFromReady).toBe(20);
+      expect(action.pullFromBacklog).toBe(20);
       expect(action.progressItemIds).toContain(10);
       expect(action.progressItemIds).toContain(20);
     }
@@ -73,7 +74,7 @@ describe("worker decision tree (parallel-work model)", () => {
     const action = decideWorkerAction({ worker, allWorkers: [worker, peer], items, config: baseConfig, currentTick: 5 });
     expect(action.kind).toBe("parallel_work");
     if (action.kind === "parallel_work") {
-      expect(action.pullFromReady).toBeUndefined();
+      expect(action.pullFromBacklog).toBeUndefined();
       expect(action.progressItemIds).toEqual(expect.arrayContaining([10, 11, 12]));
       expect(action.progressItemIds.length).toBe(3);
     }
@@ -85,7 +86,7 @@ describe("worker decision tree (parallel-work model)", () => {
     const action = decideWorkerAction({ worker, allWorkers: [worker], items, config: baseConfig, currentTick: 5 });
     expect(action.kind).toBe("parallel_work");
     if (action.kind === "parallel_work") {
-      expect(action.pullFromReady).toBe(20);
+      expect(action.pullFromBacklog).toBe(20);
       expect(action.progressItemIds).toEqual([20]);
     }
   });

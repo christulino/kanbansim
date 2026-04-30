@@ -9,9 +9,8 @@ type Props = {
 };
 
 const SWEEPABLE_PATHS: Array<{ path: string; label: string; defaults: { min: number; max: number; step: number } }> = [
-  { path: "board.wip_in_progress", label: "In Progress WIP", defaults: { min: 1, max: 15, step: 1 } },
+  { path: "board.wip_in_progress", label: "In Progress WIP", defaults: { min: 1, max: 50, step: 1 } },
   { path: "board.wip_validation", label: "Validation WIP", defaults: { min: 1, max: 8, step: 1 } },
-  { path: "board.wip_ready", label: "Ready WIP", defaults: { min: 1, max: 12, step: 1 } },
   { path: "team.switch_cost_minutes", label: "Switch cost", defaults: { min: 0, max: 60, step: 5 } },
   { path: "team.size", label: "Team size", defaults: { min: 2, max: 12, step: 1 } },
   { path: "work.arrival_rate_per_day", label: "Arrival rate", defaults: { min: 1, max: 10, step: 1 } },

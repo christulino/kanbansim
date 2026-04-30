@@ -13,6 +13,7 @@ export function createItem(args: {
     validation_effort_hours: args.validation_effort_hours,
     effort_done_hours: 0,
     column: "backlog",
+    arrived: false,
     state: "in_column",
     author_worker_id: null,
     current_worker_id: null,

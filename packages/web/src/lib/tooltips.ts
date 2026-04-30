@@ -10,7 +10,6 @@ export const TOOLTIPS: Record<string, string> = {
   "work.effort_dist.skewness": "Right-skew of the effort distribution. Positive values reflect realistic 'long tail' effort.",
   "work.block_probability_per_day": "Per active item, the chance per day it becomes blocked on something external (review, dependency, environment).",
 
-  "board.wip_ready": "Maximum items in Ready. Unlimited (—) means no Ready cap.",
   "board.wip_in_progress": "Maximum items In Progress. Lower this to test the WIP-limit hypothesis.",
   "board.wip_validation": "Maximum items in Validation. The classic QA-bottleneck lever.",
 
