@@ -12,9 +12,9 @@ export type ColumnCountMeans = Record<ColumnId, number>;
 export type CellStats = {
   sweep_value: number;
   run_count: number;
-  mean_throughput: number;
-  p05_throughput: number;
-  p95_throughput: number;
+  mean_items_completed: number;
+  p05_items_completed: number;
+  p95_items_completed: number;
   mean_median_lead_time: number;
   p05_median_lead_time: number;
   p95_median_lead_time: number;
@@ -35,7 +35,7 @@ export type AggregatorOptions = { leadTimeSampleCap?: number };
 
 type CellInternal = {
   sweep_value: number;
-  throughput_samples: number[];
+  items_completed_samples: number[];
   median_lead_time_samples: number[];
   lead_time_samples: number[];
   representative_cfd: CfdSnapshot[] | null;
@@ -55,7 +55,7 @@ export function createAggregator(options: AggregatorOptions = {}) {
     if (!cell) {
       cell = {
         sweep_value,
-        throughput_samples: [],
+        items_completed_samples: [],
         median_lead_time_samples: [],
         lead_time_samples: [],
         representative_cfd: null,
@@ -68,7 +68,7 @@ export function createAggregator(options: AggregatorOptions = {}) {
     }
     cell.run_count++;
     totalRuns++;
-    cell.throughput_samples.push(result.summary.throughput_per_day);
+    cell.items_completed_samples.push(result.summary.items_completed);
     cell.median_lead_time_samples.push(result.summary.median_lead_time_hours);
     cell.representative_cfd = result.cfd;
     for (const ta of result.time_accounting) {
@@ -103,9 +103,9 @@ export function createAggregator(options: AggregatorOptions = {}) {
       out.set(sv, {
         sweep_value: c.sweep_value,
         run_count: c.run_count,
-        mean_throughput: mean(c.throughput_samples),
-        p05_throughput: percentile(c.throughput_samples, 0.05),
-        p95_throughput: percentile(c.throughput_samples, 0.95),
+        mean_items_completed: mean(c.items_completed_samples),
+        p05_items_completed: percentile(c.items_completed_samples, 0.05),
+        p95_items_completed: percentile(c.items_completed_samples, 0.95),
         mean_median_lead_time: mean(c.median_lead_time_samples),
         p05_median_lead_time: percentile(c.median_lead_time_samples, 0.05),
         p95_median_lead_time: percentile(c.median_lead_time_samples, 0.95),

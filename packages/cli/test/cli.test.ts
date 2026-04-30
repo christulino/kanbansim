@@ -22,7 +22,7 @@ describe("CLI smoke", () => {
     );
     const result = JSON.parse(readFileSync(out, "utf-8"));
     expect(result.scenario.name).toBe("The Sweet Spot");
-    expect(result.cells.length).toBe(30);
+    expect(result.cells.length).toBe(50);
     expect(result.cells[0].summaries.length).toBe(5);
     for (const cell of result.cells) {
       for (const s of cell.summaries) {

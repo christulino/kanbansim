@@ -113,7 +113,7 @@ export function RunResults() {
 
       <ConfigStrip state={state} />
 
-      <ChartCard label="Hero · Sweep Result" title={<>Lead Time &amp; Throughput vs. <em>{state.sweep?.variable ?? "—"}</em></>} subtitle={state.sweep ? `Bands = 5th–95th percentile across runs.` : undefined} caption={<Caption kind="ucurve" status={exp.status} />}>
+      <ChartCard label="Hero · Sweep Result" title={<>Lead Time &amp; Items Completed vs. <em>{state.sweep?.variable ?? "—"}</em></>} subtitle={state.sweep ? `Lead time on left axis (days). Items completed per run on right axis. Bands = 5th–95th percentile across runs.` : undefined} caption={<Caption kind="ucurve" status={exp.status} />}>
         <UCurveChart snapshot={exp.snapshot} sweep={state.sweep} productive_hours_per_day={phpd} totalRunsExpected={totalRunsExpected} />
       </ChartCard>
 

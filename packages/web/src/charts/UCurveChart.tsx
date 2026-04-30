@@ -10,7 +10,7 @@ type Props = {
   totalRunsExpected: number;
 };
 
-type CellPoint = { x: number; throughput: number; lt_days: number; tp_lo: number; tp_hi: number; lt_lo: number; lt_hi: number };
+type CellPoint = { x: number; items: number; lt_days: number; ic_lo: number; ic_hi: number; lt_lo: number; lt_hi: number };
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 
@@ -27,9 +27,9 @@ export function UCurveChart({ snapshot, sweep, productive_hours_per_day, totalRu
     for (const [sv, c] of snapshot.cells) {
       points.push({
         x: sv,
-        throughput: c.mean_throughput,
+        items: c.mean_items_completed,
         lt_days: c.mean_median_lead_time / productive_hours_per_day,
-        tp_lo: c.p05_throughput, tp_hi: c.p95_throughput,
+        ic_lo: c.p05_items_completed, ic_hi: c.p95_items_completed,
         lt_lo: c.p05_median_lead_time / productive_hours_per_day,
         lt_hi: c.p95_median_lead_time / productive_hours_per_day,
       });
@@ -45,10 +45,10 @@ export function UCurveChart({ snapshot, sweep, productive_hours_per_day, totalRu
     const ltLo = Math.min(...points.map((p) => p.lt_lo));
     const ltMax = (ltHi || 1) * 1.1;
     const ltMin = Math.max(0, ltLo * 0.85);
-    const tpHi = Math.max(...points.map((p) => p.tp_hi));
-    const tpLo = Math.min(...points.map((p) => p.tp_lo));
-    const tpMax = (tpHi || 1) * 1.1;
-    const tpMin = Math.max(0, tpLo * 0.85);
+    const icHi = Math.max(...points.map((p) => p.ic_hi));
+    const icLo = Math.min(...points.map((p) => p.ic_lo));
+    const icMax = (icHi || 1) * 1.1;
+    const icMin = Math.max(0, icLo * 0.85);
 
     const fig = Plot.plot({
       width: 1100,
@@ -75,12 +75,12 @@ export function UCurveChart({ snapshot, sweep, productive_hours_per_day, totalRu
       marginBottom: 50,
       style: { background: "transparent", color: "var(--text-soft)", fontFamily: "JetBrains Mono, monospace", fontSize: "11px", position: "absolute", top: "0", left: "0", pointerEvents: "none" },
       x: { domain: [sweep.min, sweep.max], axis: null },
-      y: { axis: "right", label: "Throughput (items/day)", domain: [tpMin, tpMax] },
+      y: { axis: "right", label: "Items completed (per run)", domain: [icMin, icMax] },
       marks: [
-        Plot.areaY(points, { x: "x", y1: "tp_lo", y2: "tp_hi", fill: "var(--series-1)", fillOpacity: 0.15, curve: "monotone-x" }),
-        Plot.lineY(points, { x: "x", y: "throughput", stroke: "var(--series-1)", strokeWidth: 2.5, curve: "monotone-x" }),
-        Plot.dot(points, { x: "x", y: "throughput", fill: "var(--series-1)", r: 3 }),
-        Plot.text(points.slice(-1), { x: "x", y: "throughput", text: () => "Throughput", dx: 8, dy: -6, fill: "var(--series-1)", textAnchor: "start", fontFamily: "Inter", fontSize: 12, fontWeight: 500 }),
+        Plot.areaY(points, { x: "x", y1: "ic_lo", y2: "ic_hi", fill: "var(--series-1)", fillOpacity: 0.15, curve: "monotone-x" }),
+        Plot.lineY(points, { x: "x", y: "items", stroke: "var(--series-1)", strokeWidth: 2.5, curve: "monotone-x" }),
+        Plot.dot(points, { x: "x", y: "items", fill: "var(--series-1)", r: 3 }),
+        Plot.text(points.slice(-1), { x: "x", y: "items", text: () => "Items completed", dx: 8, dy: -6, fill: "var(--series-1)", textAnchor: "start", fontFamily: "Inter", fontSize: 12, fontWeight: 500 }),
       ],
     });
 
@@ -91,14 +91,14 @@ export function UCurveChart({ snapshot, sweep, productive_hours_per_day, totalRu
 
     if (snapshot.total_runs >= totalRunsExpected * 0.5 && points.length >= 3) {
       const minLead = points.reduce((acc, p) => (p.lt_days < acc.lt_days ? p : acc), points[0]!);
-      const maxThroughput = points.reduce((acc, p) => (p.throughput > acc.throughput ? p : acc), points[0]!);
+      const maxThroughput = points.reduce((acc, p) => (p.items > acc.items ? p : acc), points[0]!);
 
       // Plot's defaults: marginTop=20, marginBottom=50 here, so the plot area is y=20..310 (height 290).
       const PLOT_TOP = 20;
       const PLOT_BOTTOM = 360 - 50;
       const PLOT_H = PLOT_BOTTOM - PLOT_TOP;
       const yForLead = (lt: number) => PLOT_TOP + (1 - (lt - ltMin) / Math.max(0.0001, ltMax - ltMin)) * PLOT_H;
-      const yForThroughput = (tp: number) => PLOT_TOP + (1 - (tp - tpMin) / Math.max(0.0001, tpMax - tpMin)) * PLOT_H;
+      const yForThroughput = (tp: number) => PLOT_TOP + (1 - (tp - icMin) / Math.max(0.0001, icMax - icMin)) * PLOT_H;
 
       const ann = document.createElementNS(SVG_NS, "svg");
       ann.setAttribute("style", "position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;");
@@ -119,8 +119,8 @@ export function UCurveChart({ snapshot, sweep, productive_hours_per_day, totalRu
       ltLabel.textContent = `shortest lead time ≈ ${minLead.x.toFixed(0)}`;
       ann.appendChild(ltLabel);
 
-      // Highest throughput annotation — placed just above its data point.
-      const tpY = yForThroughput(maxThroughput.throughput);
+      // Most items completed annotation — placed just above its data point.
+      const tpY = yForThroughput(maxThroughput.items);
       const tpLabelY = tpY < 50 ? tpY + 22 : tpY - 12;
       // If the two labels are close in (x, y), nudge the throughput label down to avoid collision.
       const xClose = Math.abs(xFor(minLead.x) - xFor(maxThroughput.x)) < 120;
@@ -133,7 +133,7 @@ export function UCurveChart({ snapshot, sweep, productive_hours_per_day, totalRu
       tpLabel.setAttribute("font-family", "Caveat, cursive");
       tpLabel.setAttribute("font-size", "20");
       tpLabel.setAttribute("fill", "var(--series-1)");
-      tpLabel.textContent = `highest throughput ≈ ${maxThroughput.x.toFixed(0)}`;
+      tpLabel.textContent = `most items completed ≈ ${maxThroughput.x.toFixed(0)}`;
       ann.appendChild(tpLabel);
       wrap.appendChild(ann);
     }

@@ -44,23 +44,24 @@ describe("aggregator", () => {
     expect(snap.total_runs).toBe(3);
   });
 
-  it("computes mean throughput and lead time across runs in a cell", () => {
+  it("computes mean items_completed and lead time across runs in a cell", () => {
     const agg = createAggregator();
-    agg.ingest({ sweep_value: 5, result: makeResult(2.0, 80) });
-    agg.ingest({ sweep_value: 5, result: makeResult(3.0, 100) });
+    agg.ingest({ sweep_value: 5, result: makeResult(2.0, 80, 100) });
+    agg.ingest({ sweep_value: 5, result: makeResult(3.0, 100, 200) });
     const cell = agg.snapshot().cells.get(5)!;
-    expect(cell.mean_throughput).toBeCloseTo(2.5);
+    expect(cell.mean_items_completed).toBeCloseTo(150);
     expect(cell.mean_median_lead_time).toBeCloseTo(90);
   });
 
   it("computes 5th and 95th percentile bands from run summaries", () => {
     const agg = createAggregator();
     for (let i = 0; i < 100; i++) {
-      agg.ingest({ sweep_value: 5, result: makeResult(i * 0.05, i) });
+      agg.ingest({ sweep_value: 5, result: makeResult(0, i, i) });
     }
     const cell = agg.snapshot().cells.get(5)!;
-    expect(cell.p05_throughput).toBeCloseTo(0.25, 1);
-    expect(cell.p95_throughput).toBeCloseTo(4.75, 1);
+    // Percentile uses floor(p * (n-1)), so for n=100: p05 → idx 4, p95 → idx 94.
+    expect(cell.p05_items_completed).toBe(4);
+    expect(cell.p95_items_completed).toBe(94);
   });
 
   it("accumulates raw lead-time hours per cell for the histogram", () => {
