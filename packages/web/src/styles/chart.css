@@ -76,7 +76,7 @@
   margin-bottom: 18px;
   max-width: 70ch;
 }
-.chart-svg-wrap { width: 100%; overflow: hidden; min-height: 100px; }
+.chart-svg-wrap { width: 100%; overflow: visible; min-height: 100px; }
 .chart-svg, .chart-svg-wrap > svg { width: 100%; height: auto; display: block; }
 .caption {
   font-family: var(--serif);

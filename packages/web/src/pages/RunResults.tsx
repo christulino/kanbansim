@@ -113,7 +113,7 @@ export function RunResults() {
 
       <ConfigStrip state={state} />
 
-      <ChartCard label="Hero · Sweep Result" title={<>Lead Time &amp; Throughput vs. <em>{state.sweep?.variable ?? "—"}</em></>} subtitle={state.sweep ? `Left axis: lead time (days). Right axis: stacked items per run — completed (teal) at the bottom, unfinished (terracotta) on top. Total height = items that arrived during the sim.` : undefined} caption={<Caption kind="ucurve" status={exp.status} />}>
+      <ChartCard label="Hero · Sweep Result" title={<>Lead Time &amp; Items Completed vs. <em>{state.sweep?.variable ?? "—"}</em></>} subtitle={state.sweep ? `Left axis: lead time of completed items (days). Right axis: items completed per run. Bands = 5th–95th percentile across runs. Hover a sweep value for full metrics including arrived and unfinished counts.` : undefined} caption={<Caption kind="ucurve" status={exp.status} />}>
         <UCurveChart snapshot={exp.snapshot} sweep={state.sweep} productive_hours_per_day={phpd} totalRunsExpected={totalRunsExpected} />
       </ChartCard>
 

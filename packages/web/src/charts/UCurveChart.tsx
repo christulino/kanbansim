@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import * as Plot from "@observablehq/plot";
 import type { AggregatorSnapshot } from "../orchestrator/aggregator.js";
 import type { SweepSpec } from "../state/urlCodec.js";
@@ -10,24 +10,39 @@ type Props = {
   totalRunsExpected: number;
 };
 
-type CellPoint = { x: number; items: number; arrived: number; unfinished: number; lt_days: number; lt_lo: number; lt_hi: number };
+type CellPoint = {
+  x: number;
+  items: number;
+  items_lo: number;
+  items_hi: number;
+  arrived: number;
+  unfinished: number;
+  lt_days: number;
+  lt_lo: number;
+  lt_hi: number;
+};
+
+type HoverState = { screenX: number; screenY: number; point: CellPoint };
 
 const SVG_NS = "http://www.w3.org/2000/svg";
+const W = 1100;
+const PLOT_LEFT = 60;
+const PLOT_RIGHT = 1020;     // W - marginRight (80) = 1020
 
 export function UCurveChart({ snapshot, sweep, productive_hours_per_day, totalRunsExpected }: Props) {
-  const ref = useRef<HTMLDivElement | null>(null);
+  const hostRef = useRef<HTMLDivElement | null>(null);
+  const chartRef = useRef<HTMLDivElement | null>(null);
+  const [hovered, setHovered] = useState<HoverState | null>(null);
 
-  useEffect(() => {
-    const host = ref.current;
-    if (!host) return;
-    while (host.firstChild) host.removeChild(host.firstChild);
-    if (!sweep || !snapshot) return;
-
-    const points: CellPoint[] = [];
+  const points = useMemo<CellPoint[]>(() => {
+    if (!sweep || !snapshot) return [];
+    const pts: CellPoint[] = [];
     for (const [sv, c] of snapshot.cells) {
-      points.push({
+      pts.push({
         x: sv,
         items: c.mean_items_completed,
+        items_lo: c.p05_items_completed,
+        items_hi: c.p95_items_completed,
         arrived: c.mean_items_arrived,
         unfinished: c.mean_items_unfinished,
         lt_days: c.mean_median_lead_time / productive_hours_per_day,
@@ -35,30 +50,27 @@ export function UCurveChart({ snapshot, sweep, productive_hours_per_day, totalRu
         lt_hi: c.p95_median_lead_time / productive_hours_per_day,
       });
     }
-    points.sort((a, b) => a.x - b.x);
-    if (points.length === 0) return;
+    pts.sort((a, b) => a.x - b.x);
+    return pts;
+  }, [snapshot, sweep, productive_hours_per_day]);
 
-    // Tighten y-domains to the data so the variation is visible. Pad ~10% above the max
-    // and bring the floor up to ~80% of the lower-band minimum (clamped to 0). When a sweep
-    // value's lead time is dramatically higher than the rest, this still keeps the full range
-    // visible but doesn't waste the bottom of the chart on empty space.
+  useEffect(() => {
+    const host = chartRef.current;
+    if (!host) return;
+    while (host.firstChild) host.removeChild(host.firstChild);
+    if (!sweep || points.length === 0) return;
+
     const ltHi = Math.max(...points.map((p) => p.lt_hi));
     const ltLo = Math.min(...points.map((p) => p.lt_lo));
     const ltMax = (ltHi || 1) * 1.1;
     const ltMin = Math.max(0, ltLo * 0.85);
-    // Right axis spans 0 → max(arrived) so the completed (bottom) and unfinished (top) bands
-    // fit cleanly. Anchored at 0 because "items completed" zero is meaningful — the stack
-    // visually shows what the team got through vs. what piled up.
-    const arrivedMax = Math.max(...points.map((p) => p.arrived));
-    const icMax = (arrivedMax || 1) * 1.1;
-    const icMin = 0;
+    const icHi = Math.max(...points.map((p) => p.items_hi));
+    const icLo = Math.min(...points.map((p) => p.items_lo));
+    const icMax = (icHi || 1) * 1.1;
+    const icMin = Math.max(0, icLo * 0.85);
 
     const fig = Plot.plot({
-      width: 1100,
-      height: 360,
-      marginLeft: 60,
-      marginRight: 80,
-      marginBottom: 50,
+      width: W, height: 360, marginLeft: 60, marginRight: 80, marginBottom: 50,
       style: { background: "transparent", color: "var(--text-soft)", fontFamily: "JetBrains Mono, monospace", fontSize: "11px" },
       x: { label: sweep.variable, domain: [sweep.min, sweep.max], grid: false },
       y: { label: "Lead time (days)", domain: [ltMin, ltMax] },
@@ -71,26 +83,15 @@ export function UCurveChart({ snapshot, sweep, productive_hours_per_day, totalRu
     });
 
     const fig2 = Plot.plot({
-      width: 1100,
-      height: 360,
-      marginLeft: 60,
-      marginRight: 80,
-      marginBottom: 50,
+      width: W, height: 360, marginLeft: 60, marginRight: 80, marginBottom: 50,
       style: { background: "transparent", color: "var(--text-soft)", fontFamily: "JetBrains Mono, monospace", fontSize: "11px", position: "absolute", top: "0", left: "0", pointerEvents: "none" },
       x: { domain: [sweep.min, sweep.max], axis: null },
-      y: { axis: "right", label: "Items per run", domain: [icMin, icMax] },
+      y: { axis: "right", label: "Items completed (per run)", domain: [icMin, icMax] },
       marks: [
-        // Completed band: filled from 0 up to mean_items_completed. Solid teal.
-        Plot.areaY(points, { x: "x", y1: () => 0, y2: "items", fill: "var(--series-1)", fillOpacity: 0.45, curve: "monotone-x" }),
-        // Unfinished band: filled from items_completed up to items_arrived. Warning hue.
-        Plot.areaY(points, { x: "x", y1: "items", y2: "arrived", fill: "var(--warning)", fillOpacity: 0.32, curve: "monotone-x" }),
-        // Items arrived ceiling line — usually flat (constant arrival rate × sim_days), drawn faint dashed.
-        Plot.lineY(points, { x: "x", y: "arrived", stroke: "var(--warning)", strokeWidth: 1, strokeDasharray: "4,3", curve: "monotone-x" }),
-        // Items completed line — what the team actually got through.
+        Plot.areaY(points, { x: "x", y1: "items_lo", y2: "items_hi", fill: "var(--series-1)", fillOpacity: 0.15, curve: "monotone-x" }),
         Plot.lineY(points, { x: "x", y: "items", stroke: "var(--series-1)", strokeWidth: 2.5, curve: "monotone-x" }),
         Plot.dot(points, { x: "x", y: "items", fill: "var(--series-1)", r: 3 }),
         Plot.text(points.slice(-1), { x: "x", y: "items", text: () => "Items completed", dx: 8, dy: -6, fill: "var(--series-1)", textAnchor: "start", fontFamily: "Inter", fontSize: 12, fontWeight: 500 }),
-        Plot.text(points.slice(-1), { x: "x", y: "arrived", text: () => "Items arrived", dx: 8, dy: -6, fill: "var(--warning)", textAnchor: "start", fontFamily: "Inter", fontSize: 11, fontWeight: 500 }),
       ],
     });
 
@@ -99,11 +100,10 @@ export function UCurveChart({ snapshot, sweep, productive_hours_per_day, totalRu
     wrap.appendChild(fig);
     wrap.appendChild(fig2);
 
-    if (snapshot.total_runs >= totalRunsExpected * 0.5 && points.length >= 3) {
+    if (snapshot && snapshot.total_runs >= totalRunsExpected * 0.5 && points.length >= 3) {
       const minLead = points.reduce((acc, p) => (p.lt_days < acc.lt_days ? p : acc), points[0]!);
       const maxThroughput = points.reduce((acc, p) => (p.items > acc.items ? p : acc), points[0]!);
 
-      // Plot's defaults: marginTop=20, marginBottom=50 here, so the plot area is y=20..310 (height 290).
       const PLOT_TOP = 20;
       const PLOT_BOTTOM = 360 - 50;
       const PLOT_H = PLOT_BOTTOM - PLOT_TOP;
@@ -115,8 +115,6 @@ export function UCurveChart({ snapshot, sweep, productive_hours_per_day, totalRu
       ann.setAttribute("viewBox", "0 0 1100 360");
       const xFor = (v: number) => ((v - sweep.min) / (sweep.max - sweep.min)) * 980 + 60;
 
-      // Shortest lead time annotation — placed just above the data point.
-      // If the point is near the top of the chart, flip it below to keep the label visible.
       const ltY = yForLead(minLead.lt_days);
       const ltLabelY = ltY < 50 ? ltY + 22 : ltY - 12;
       const ltLabel = document.createElementNS(SVG_NS, "text");
@@ -129,10 +127,8 @@ export function UCurveChart({ snapshot, sweep, productive_hours_per_day, totalRu
       ltLabel.textContent = `shortest lead time ≈ ${minLead.x.toFixed(0)}`;
       ann.appendChild(ltLabel);
 
-      // Most items completed annotation — placed just above its data point.
       const tpY = yForThroughput(maxThroughput.items);
       const tpLabelY = tpY < 50 ? tpY + 22 : tpY - 12;
-      // If the two labels are close in (x, y), nudge the throughput label down to avoid collision.
       const xClose = Math.abs(xFor(minLead.x) - xFor(maxThroughput.x)) < 120;
       const yClose = Math.abs(ltLabelY - tpLabelY) < 22;
       const finalTpY = xClose && yClose ? tpLabelY + 24 : tpLabelY;
@@ -150,7 +146,33 @@ export function UCurveChart({ snapshot, sweep, productive_hours_per_day, totalRu
 
     host.appendChild(wrap);
     return () => { while (host.firstChild) host.removeChild(host.firstChild); };
-  }, [snapshot, sweep, productive_hours_per_day, totalRunsExpected]);
+  }, [points, sweep, totalRunsExpected, snapshot]);
+
+  function handleMove(evt: React.MouseEvent<HTMLDivElement>) {
+    if (!hostRef.current || !chartRef.current || !sweep || points.length === 0) return;
+    const chartRect = chartRef.current.getBoundingClientRect();
+    const hostRect = hostRef.current.getBoundingClientRect();
+    // Translate cursor x into the chart's viewBox (0..W).
+    const xInChart = ((evt.clientX - chartRect.left) / chartRect.width) * W;
+    if (xInChart < PLOT_LEFT || xInChart > PLOT_RIGHT) {
+      setHovered(null);
+      return;
+    }
+    const sweepValue = ((xInChart - PLOT_LEFT) / (PLOT_RIGHT - PLOT_LEFT)) * (sweep.max - sweep.min) + sweep.min;
+    let nearest = points[0]!;
+    let bestDist = Math.abs(nearest.x - sweepValue);
+    for (const p of points) {
+      const d = Math.abs(p.x - sweepValue);
+      if (d < bestDist) { nearest = p; bestDist = d; }
+    }
+    const nearestSvgX = ((nearest.x - sweep.min) / (sweep.max - sweep.min)) * (PLOT_RIGHT - PLOT_LEFT) + PLOT_LEFT;
+    const nearestPixelX = (nearestSvgX / W) * chartRect.width + chartRect.left - hostRect.left;
+    setHovered({
+      screenX: nearestPixelX,
+      screenY: chartRect.top - hostRect.top,
+      point: nearest,
+    });
+  }
 
   if (!sweep) {
     return <div className="card-loading">No sweep variable selected. Set one in Build → Monte Carlo to see the U-curve.</div>;
@@ -158,5 +180,21 @@ export function UCurveChart({ snapshot, sweep, productive_hours_per_day, totalRu
   if (!snapshot || snapshot.total_runs === 0) {
     return <div className="card-loading">Waiting for first runs…</div>;
   }
-  return <div ref={ref} />;
+  return (
+    <div ref={hostRef} className="chart-host" onMouseMove={handleMove} onMouseLeave={() => setHovered(null)}>
+      <div ref={chartRef} />
+      {hovered && (
+        <div className="chart-tooltip" style={{ left: hovered.screenX, top: hovered.screenY }}>
+          <div className="tt-title">{sweep.variable} = {hovered.point.x}</div>
+          <div className="tt-row"><span className="tt-key">Lead time (median)</span><span className="tt-val">{hovered.point.lt_days.toFixed(1)} d</span></div>
+          <div className="tt-row"><span className="tt-key">Lead time (p5–p95)</span><span className="tt-val">{hovered.point.lt_lo.toFixed(1)} – {hovered.point.lt_hi.toFixed(1)} d</span></div>
+          <div className="tt-row" style={{ marginTop: 4, paddingTop: 4, borderTop: "1px solid rgba(244,238,220,0.18)" }}>
+            <span className="tt-key">Items completed</span><span className="tt-val">{hovered.point.items.toFixed(1)}</span>
+          </div>
+          <div className="tt-row"><span className="tt-key">Items arrived</span><span className="tt-val">{hovered.point.arrived.toFixed(1)}</span></div>
+          <div className="tt-row"><span className="tt-key">Items unfinished</span><span className="tt-val">{hovered.point.unfinished.toFixed(1)}</span></div>
+        </div>
+      )}
+    </div>
+  );
 }
