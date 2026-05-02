@@ -3,7 +3,7 @@ import { createItem, isBlocked, advanceItemEffort } from "../src/item.js";
 
 describe("item helpers", () => {
   it("creates an item in Backlog with zero effort done", () => {
-    const item = createItem({ id: 1, arrival_tick: 5, effort_required_hours: 8, validation_effort_hours: 3 });
+    const item = createItem({ id: 1, arrival_tick: 5, effort_required_hours: 8 });
     expect(item.column).toBe("backlog");
     expect(item.effort_done_hours).toBe(0);
     expect(item.state).toBe("in_column");
@@ -11,21 +11,27 @@ describe("item helpers", () => {
   });
 
   it("isBlocked is false in normal state", () => {
-    const item = createItem({ id: 1, arrival_tick: 0, effort_required_hours: 8, validation_effort_hours: 3 });
+    const item = createItem({ id: 1, arrival_tick: 0, effort_required_hours: 8 });
     expect(isBlocked(item)).toBe(false);
   });
 
   it("advanceItemEffort accumulates progress in In Progress", () => {
-    let item = createItem({ id: 1, arrival_tick: 0, effort_required_hours: 8, validation_effort_hours: 3 });
+    let item = createItem({ id: 1, arrival_tick: 0, effort_required_hours: 8 });
     item = { ...item, column: "in_progress" };
     item = advanceItemEffort(item, 2.5);
     expect(item.effort_done_hours).toBeCloseTo(2.5);
   });
 
   it("advanceItemEffort caps at effort_required when in In Progress", () => {
-    let item = createItem({ id: 1, arrival_tick: 0, effort_required_hours: 5, validation_effort_hours: 2 });
+    let item = createItem({ id: 1, arrival_tick: 0, effort_required_hours: 5 });
     item = { ...item, column: "in_progress" };
     item = advanceItemEffort(item, 10);
     expect(item.effort_done_hours).toBeLessThanOrEqual(5);
+  });
+
+  it("advanceItemEffort does nothing when not in_progress", () => {
+    const item = createItem({ id: 1, arrival_tick: 0, effort_required_hours: 8 });
+    const result = advanceItemEffort(item, 5);
+    expect(result.effort_done_hours).toBe(0);
   });
 });
