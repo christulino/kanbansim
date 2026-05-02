@@ -4,16 +4,16 @@ import type { ExperimentConfig, RunResult } from "@kanbansim/engine";
 import type { WorkerEvent, WorkerJob } from "../src/orchestrator/messages.js";
 
 const dummyConfig: ExperimentConfig = {
-  team: { size: 5, productive_hours_per_day: 6, switch_cost_minutes: 15, worker_pick_policy: "round_robin", blocking_response: "start_new" },
-  work: { arrival_rate_per_day: 4, effort_dist: { mu: 8, sigma: 3.5, skewness: 1.2 }, validation_effort: { kind: "fraction", fraction: 0.3 }, block_probability_per_day: 0.04, block_duration_dist: { mu: 4, sigma: 2, skewness: 0.5 } },
-  board: { wip_in_progress: 5, wip_validation: 3 },
+  team: { size: 5, productive_hours_per_day: 6, switch_cost_minutes: 15 },
+  work: { arrival_rate_per_day: 4, effort_dist: { mu: 8, sigma: 3.5, skewness: 1.2 }, block_probability_per_day: 0.04, block_duration_dist: { mu: 4, sigma: 2, skewness: 0.5 } },
+  board: { wip_limit: 5 },
   simulation: { sim_days: 130, tick_size_hours: 1 },
 };
 
 function fakeResult(throughput: number): RunResult {
   return {
     config: dummyConfig, seed: 1n, completed_items: [],
-    cfd: [{ tick: 0, counts: { backlog: 0, in_progress: 0, validation: 0, done: 0 } }],
+    cfd: [{ tick: 0, counts: { backlog: 0, in_progress: 0, done: 0 } }],
     time_accounting: [{ worker_id: 1, hours_working: 1, hours_switching: 0, hours_blocked: 0, hours_idle: 0 }],
     summary: { throughput_per_day: throughput, median_lead_time_hours: 1, p85_lead_time_hours: 1, p95_lead_time_hours: 1, max_lead_time_hours: 1, items_completed: 0, items_arrived: 0 },
   };

@@ -10,7 +10,7 @@ function makeResult(throughput: number, leadTime: number, completed = 50): RunRe
       id: i, arrival_tick: 0, done_tick: leadTime,
       lead_time_hours: leadTime, blocked_hours: 0, validation_started_tick: null,
     })),
-    cfd: [{ tick: 0, counts: { backlog: 0, in_progress: 0, validation: 0, done: 0 } }],
+    cfd: [{ tick: 0, counts: { backlog: 0, in_progress: 0, done: 0 } }],
     time_accounting: [
       { worker_id: 1, hours_working: 100, hours_switching: 20, hours_blocked: 30, hours_idle: 10 },
     ],
