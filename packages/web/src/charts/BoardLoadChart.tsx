@@ -8,17 +8,15 @@ type Props = {
   sweep: SweepSpec | null;
 };
 
-const COLUMNS: ColumnId[] = ["backlog", "in_progress", "validation", "done"];
+const COLUMNS: ColumnId[] = ["backlog", "in_progress", "done"];
 const COLORS: Record<ColumnId, string> = {
   backlog: "var(--series-5)",
   in_progress: "var(--series-2)",
-  validation: "var(--series-3)",
   done: "var(--series-1)",
 };
 const LABELS: Record<ColumnId, string> = {
   backlog: "Backlog",
   in_progress: "In Progress",
-  validation: "Validation",
   done: "Done",
 };
 
@@ -43,7 +41,7 @@ export function BoardLoadChart({ snapshot, sweep }: Props) {
     for (const c of snapshot.cells.values()) {
       if (c.run_count === 0) continue;
       const m = c.column_count_means;
-      const total = m.backlog + m.in_progress + m.validation + m.done;
+      const total = m.backlog + m.in_progress + m.done;
       if (total <= 0) continue;
       out.push({ x: c.sweep_value, means: m, total });
     }
@@ -53,7 +51,7 @@ export function BoardLoadChart({ snapshot, sweep }: Props) {
 
   // Per-category peaks: which sweep cell maximizes each column's average count?
   const peaks = useMemo<Record<ColumnId, { x: number; value: number } | null>>(() => {
-    const init = { backlog: null, in_progress: null, validation: null, done: null } as Record<ColumnId, { x: number; value: number } | null>;
+    const init = { backlog: null, in_progress: null, done: null } as Record<ColumnId, { x: number; value: number } | null>;
     if (bars.length === 0) return init;
     for (const col of COLUMNS) {
       let best: { x: number; value: number } | null = null;
