@@ -1,8 +1,6 @@
 import type { ExperimentConfig, Item, Worker, ColumnId } from "./types.js";
 import type { Prng } from "./prng.js";
 import { type EventQueue, popDueEvents } from "./events.js";
-import { decideWorkerAction, type WorkerAction } from "./worker.js";
-import { computeTickAllocation } from "./multitasking.js";
 import { sampleLogNormal } from "./distributions.js";
 
 export type TickAccounting = { working: number; switching: number; blocked: number; idle: number };
@@ -27,60 +25,98 @@ export function processTick(args: {
   let items = [...args.items];
   let workers = args.workers.map((w) => ({ ...w }));
 
-  // 1. Resolve due events. Arrivals flip an item's `arrived` flag from false to true; the
-  // item stays in the Backlog column but becomes visible to the chart and pullable by workers.
+  // 1. Resolve due events.
   for (const event of popDueEvents(args.events, currentTick)) {
     if (event.kind === "arrival") {
       items = items.map((it) => (it.id === event.itemId ? { ...it, arrived: true } : it));
     } else if (event.kind === "unblock") {
-      items = items.map((it) => (it.id === event.itemId ? { ...it, state: "in_column" as const, blocked_until_tick: null } : it));
+      items = items.map((it) =>
+        it.id === event.itemId ? { ...it, state: "in_column" as const, blocked_until_tick: null } : it,
+      );
     }
   }
 
-  // 2. Sample new blocks for active items. Track which workers got disrupted so they pay
-  // a one-time switch_cost on this tick — a block tears the worker out of the item they
-  // were progressing, costing context-load time before they can re-orient.
+  // 2. Sample new blocks for active in_progress items.
   const tickHours = config.simulation.tick_size_hours;
   const productiveHoursPerDay = config.team.productive_hours_per_day;
   const blocksPerHour = config.work.block_probability_per_day / Math.max(1, productiveHoursPerDay);
-  const blocksByWorker = new Map<number, number>();
   for (let i = 0; i < items.length; i++) {
     const it = items[i]!;
-    if ((it.column === "in_progress" || it.column === "validation") && it.state === "in_column") {
+    if (it.column === "in_progress" && it.state === "in_column") {
       if (rng.next() < blocksPerHour * tickHours) {
         const durationHours = Math.max(1, Math.round(sampleLogNormal(rng, config.work.block_duration_dist)));
         items[i] = { ...it, state: "blocked", blocked_until_tick: currentTick + durationHours };
         args.events.schedule({ tick: currentTick + durationHours, kind: "unblock", itemId: it.id });
-        if (it.current_worker_id !== null) {
-          blocksByWorker.set(it.current_worker_id, (blocksByWorker.get(it.current_worker_id) ?? 0) + 1);
-        }
       }
     }
   }
 
-  // 3. Per-worker decisions, in randomized order.
-  const order = shuffle(workers.map((w) => w.id), rng);
+  // 3. Replenishment: fill WIP to limit, FIFO from backlog, fewest-assigned worker wins each slot.
+  const pullsByWorker = new Map<number, number>();
+  const wipLimit = config.board.wip_limit;
+  while (true) {
+    const inProgressCount = items.filter((it) => it.column === "in_progress").length;
+    if (wipLimit !== null && inProgressCount >= wipLimit) break;
+    const backlogItem = items
+      .filter((it) => it.column === "backlog" && it.arrived)
+      .sort((a, b) => a.arrival_tick - b.arrival_tick || a.id - b.id)[0];
+    if (!backlogItem) break;
+    const worker = workers
+      .slice()
+      .sort((a, b) => a.active_item_ids.length - b.active_item_ids.length || a.id - b.id)[0]!;
+    items = items.map((it) =>
+      it.id === backlogItem.id
+        ? { ...it, column: "in_progress" as const, author_worker_id: worker.id, current_worker_id: worker.id }
+        : it,
+    );
+    workers = workers.map((w) =>
+      w.id === worker.id ? { ...w, active_item_ids: [...w.active_item_ids, backlogItem.id] } : w,
+    );
+    pullsByWorker.set(worker.id, (pullsByWorker.get(worker.id) ?? 0) + 1);
+  }
+
+  // 4. Work phase: daily-amortized allocation across each worker's assigned items.
+  // Workers touch every unblocked item each day; switch cost paid once per inter-item
+  // transition (K-1 per day) plus once per new item pulled this tick.
+  const switchCostHours = config.team.switch_cost_minutes / 60;
   const accounting: Map<number, TickAccounting> = new Map(
     workers.map((w) => [w.id, { working: 0, switching: 0, blocked: 0, idle: 0 }]),
   );
-  for (const workerId of order) {
-    const worker = workers.find((w) => w.id === workerId)!;
-    const action = decideWorkerAction({ worker, allWorkers: workers, items, config, currentTick });
-    ({ items, workers } = applyAction(action, worker, items, workers, config, accounting, blocksByWorker));
+
+  for (const worker of workers) {
+    const acc = accounting.get(worker.id)!;
+    const myItems = items.filter((it) => worker.active_item_ids.includes(it.id));
+    const unblocked = myItems.filter((it) => it.state === "in_column" && it.column === "in_progress");
+    const K = unblocked.length;
+    const pulls = pullsByWorker.get(worker.id) ?? 0;
+
+    if (K === 0) {
+      if (myItems.length > 0) {
+        acc.blocked += tickHours;
+      } else {
+        acc.idle += tickHours;
+      }
+      continue;
+    }
+
+    const dailySwitchOverhead = Math.max(0, K - 1 + pulls) * switchCostHours;
+    const dailyUsefulHours = Math.max(0, productiveHoursPerDay - dailySwitchOverhead);
+    const perItemPerTick = (dailyUsefulHours / K / productiveHoursPerDay) * tickHours;
+    const tickUsefulHours = (dailyUsefulHours / productiveHoursPerDay) * tickHours;
+
+    const unblockedIds = new Set(unblocked.map((it) => it.id));
+    items = items.map((it) =>
+      unblockedIds.has(it.id) ? { ...it, effort_done_hours: it.effort_done_hours + perItemPerTick } : it,
+    );
+
+    acc.working += tickUsefulHours;
+    acc.switching += Math.max(0, tickHours - tickUsefulHours);
   }
 
-  // 4. Detect completions and column transitions.
+  // 5. Detect completions: in_progress items whose effort is done move directly to done.
   const completedThisTick: Item[] = [];
   items = items.map((it) => {
     if (it.column === "in_progress" && it.effort_done_hours >= it.effort_required_hours) {
-      const validationCount = items.filter((x) => x.column === "validation").length;
-      const wip = config.board.wip_validation;
-      if (wip === null || validationCount < wip) {
-        return { ...it, column: "validation" as const, effort_done_hours: 0, current_worker_id: null };
-      }
-      return it;
-    }
-    if (it.column === "validation" && it.effort_done_hours >= it.validation_effort_hours) {
       const completed = { ...it, column: "done" as const, done_tick: currentTick, current_worker_id: null };
       completedThisTick.push(completed);
       return completed;
@@ -88,7 +124,7 @@ export function processTick(args: {
     return it;
   });
 
-  // 5. Update worker active_item_ids: remove items now in Done.
+  // 6. Remove completed items from worker queues.
   workers = workers.map((w) => ({
     ...w,
     active_item_ids: w.active_item_ids.filter((id) => {
@@ -98,129 +134,4 @@ export function processTick(args: {
   }));
 
   return { items, workers, events: args.events, completedThisTick, timeAccounting: accounting };
-}
-
-function shuffle<T>(arr: T[], rng: Prng): T[] {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(rng.next() * (i + 1));
-    [a[i], a[j]] = [a[j]!, a[i]!];
-  }
-  return a;
-}
-
-function applyAction(
-  action: WorkerAction,
-  worker: Worker,
-  items: Item[],
-  workers: Worker[],
-  config: ExperimentConfig,
-  accounting: Map<number, TickAccounting>,
-  blocksByWorker: Map<number, number>,
-): { items: Item[]; workers: Worker[] } {
-  const acc = accounting.get(worker.id)!;
-  const tickHours = config.simulation.tick_size_hours;
-  const switchCostHours = config.team.switch_cost_minutes / 60;
-  const blockCount = blocksByWorker.get(worker.id) ?? 0;
-  const blockDisruptionHours = blockCount * switchCostHours;
-  let workersOut = workers;
-  let itemsOut = items;
-
-  switch (action.kind) {
-    case "parallel_work": {
-      // 1. Apply pulls (move items between columns / add to active list).
-      if (action.pullFromBacklog !== undefined) {
-        const pulledId = action.pullFromBacklog;
-        itemsOut = itemsOut.map((it) =>
-          it.id === pulledId
-            ? { ...it, column: "in_progress" as const, author_worker_id: worker.id, current_worker_id: worker.id, effort_done_hours: 0 }
-            : it,
-        );
-        workersOut = workersOut.map((w) =>
-          w.id === worker.id && !w.active_item_ids.includes(pulledId)
-            ? { ...w, active_item_ids: [...w.active_item_ids, pulledId], last_chosen_item_id: pulledId }
-            : w,
-        );
-      }
-
-      if (action.pullValidation !== undefined) {
-        const pulledId = action.pullValidation;
-        itemsOut = itemsOut.map((it) =>
-          it.id === pulledId ? { ...it, current_worker_id: worker.id } : it,
-        );
-        workersOut = workersOut.map((w) =>
-          w.id === worker.id && !w.active_item_ids.includes(pulledId)
-            ? { ...w, active_item_ids: [...w.active_item_ids, pulledId], last_chosen_item_id: pulledId }
-            : w,
-        );
-      }
-
-      // 2. Compute tick allocation across all unblocked active items.
-      const updatedWorker = workersOut.find((w) => w.id === worker.id)!;
-      const myItems = itemsOut.filter((it) => updatedWorker.active_item_ids.includes(it.id));
-      const myUnblocked = myItems.filter(
-        (it) => it.state === "in_column" && (it.column === "in_progress" || it.column === "validation"),
-      );
-      const progressingIds = new Set(action.progressItemIds);
-
-      const alloc = computeTickAllocation({
-        tickHours,
-        productiveHoursPerDay: config.team.productive_hours_per_day,
-        progressingCount: myUnblocked.filter((it) => progressingIds.has(it.id)).length,
-        switchCostHours,
-        extraDisruptionHours: blockDisruptionHours,
-      });
-
-      // 3. Distribute progress.
-      if (alloc.perItemHours > 0) {
-        itemsOut = itemsOut.map((it) =>
-          progressingIds.has(it.id) && it.state === "in_column"
-            ? { ...it, effort_done_hours: it.effort_done_hours + alloc.perItemHours, current_worker_id: worker.id }
-            : it,
-        );
-      }
-
-      // 4. Time accounting.
-      acc.working += alloc.usefulHours;
-      acc.switching += Math.max(0, tickHours - alloc.usefulHours);
-
-      return { items: itemsOut, workers: workersOut };
-    }
-    case "swarm_unblock": {
-      const item = itemsOut.find((it) => it.id === action.itemId);
-      if (!item) {
-        acc.idle += tickHours;
-        return { items: itemsOut, workers: workersOut };
-      }
-      // Swarm: contribute progress to a peer's blocked item (preserves prior semantics).
-      const alloc = computeTickAllocation({
-        tickHours,
-        productiveHoursPerDay: config.team.productive_hours_per_day,
-        progressingCount: 1,
-        switchCostHours: config.team.switch_cost_minutes / 60,
-      });
-      acc.working += alloc.usefulHours;
-      acc.switching += tickHours - alloc.usefulHours;
-      itemsOut = itemsOut.map((it) =>
-        it.id !== action.itemId
-          ? it
-          : { ...it, effort_done_hours: it.effort_done_hours + alloc.usefulHours },
-      );
-      return { items: itemsOut, workers: workersOut };
-    }
-    case "idle": {
-      const hasItems = worker.active_item_ids.length > 0;
-      if (hasItems) {
-        // Worker has items but they're all blocked. If a block fired this tick, attribute
-        // some of the worker's time to "switching" — the disruption of being torn off the
-        // task — with the remainder counted as "blocked" (waiting for the dependency).
-        const disruption = Math.min(tickHours, blockDisruptionHours);
-        acc.switching += disruption;
-        acc.blocked += tickHours - disruption;
-      } else {
-        acc.idle += tickHours;
-      }
-      return { items: itemsOut, workers: workersOut };
-    }
-  }
 }
