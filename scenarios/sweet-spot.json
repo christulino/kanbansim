@@ -3,10 +3,10 @@
   "description": "WIP swept 1->50 to find the optimal point.",
   "lesson": "Little's Law made visible.",
   "config": {
-    "team": { "size": 5, "productive_hours_per_day": 6, "switch_cost_minutes": 15, "worker_pick_policy": "round_robin", "blocking_response": "start_new" },
-    "work": { "arrival_rate_per_day": 1.0, "effort_dist": { "mu": 24, "sigma": 8, "skewness": 0.5 }, "validation_effort": { "kind": "fraction", "fraction": 0.3 }, "block_probability_per_day": 0.10, "block_duration_dist": { "mu": 4, "sigma": 2, "skewness": 0.5 } },
-    "board": { "wip_in_progress": 5, "wip_validation": 5 },
+    "team": { "size": 5, "productive_hours_per_day": 6, "switch_cost_minutes": 15 },
+    "work": { "arrival_rate_per_day": 1.0, "effort_dist": { "mu": 31, "sigma": 10, "skewness": 0.5 }, "block_probability_per_day": 0.10, "block_duration_dist": { "mu": 4, "sigma": 2, "skewness": 0.5 } },
+    "board": { "wip_limit": 5 },
     "simulation": { "sim_days": 130, "tick_size_hours": 1 }
   },
-  "sweep": { "variable": "board.wip_in_progress", "min": 1, "max": 50, "step": 1 }
+  "sweep": { "variable": "board.wip_limit", "min": 1, "max": 50, "step": 1 }
 }
