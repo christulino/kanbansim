@@ -13,7 +13,6 @@ export function runSimulation(config: ExperimentConfig, seed: bigint): RunResult
   const totalTicks = config.simulation.sim_days * config.team.productive_hours_per_day;
   const productiveHoursPerDay = config.team.productive_hours_per_day;
 
-  // Pre-sample arrivals: Poisson process across all simulated days.
   const events = createEventQueue();
   const allItems: Item[] = [];
   let nextItemId = 1;
@@ -23,19 +22,15 @@ export function runSimulation(config: ExperimentConfig, seed: bigint): RunResult
       const arrivalHourOfDay = Math.floor(rng.next() * productiveHoursPerDay);
       const arrivalTick = day * productiveHoursPerDay + arrivalHourOfDay;
       const effort = Math.max(0.5, sampleLogNormal(rng, config.work.effort_dist));
-      const validationEffort =
-        config.work.validation_effort.kind === "fraction"
-          ? Math.max(0.25, effort * config.work.validation_effort.fraction)
-          : Math.max(0.25, sampleLogNormal(rng, config.work.validation_effort.dist));
       const id = nextItemId++;
-      const item = createItem({ id, arrival_tick: arrivalTick, effort_required_hours: effort, validation_effort_hours: validationEffort });
+      const item = createItem({ id, arrival_tick: arrivalTick, effort_required_hours: effort });
       allItems.push(item);
       events.schedule({ tick: arrivalTick, kind: "arrival", itemId: id });
     }
   }
 
   let workers: Worker[] = Array.from({ length: config.team.size }, (_, i) => ({
-    id: i + 1, active_item_ids: [], last_chosen_item_id: null,
+    id: i + 1, active_item_ids: [],
   }));
   let items: Item[] = allItems;
 
@@ -58,8 +53,7 @@ export function runSimulation(config: ExperimentConfig, seed: bigint): RunResult
         a.hours_idle += acc.idle;
       }
     }
-    // Pre-arrival items are intentionally hidden — only items whose `arrived` flag is set count toward the board.
-    const counts: Record<ColumnId, number> = { backlog: 0, in_progress: 0, validation: 0, done: 0 };
+    const counts: Record<ColumnId, number> = { backlog: 0, in_progress: 0, done: 0 };
     for (const it of items) {
       if (it.arrived) counts[it.column]++;
     }
@@ -74,7 +68,6 @@ export function runSimulation(config: ExperimentConfig, seed: bigint): RunResult
       done_tick: it.done_tick!,
       lead_time_hours: it.done_tick! - it.arrival_tick,
       blocked_hours: 0,
-      validation_started_tick: null,
     }));
 
   const itemsArrived = items.filter((it) => it.arrived).length;
