@@ -1,17 +1,15 @@
 export const TOOLTIPS: Record<string, string> = {
-  "team.size": "Number of generalist workers on the team. Each can perform any role; peer review prevents self-validation.",
-  "team.productive_hours_per_day": "Hours per workday spent on simulated work. The default 6 reflects realistic ratio of meetings/admin to focus time.",
-  "team.switch_cost_minutes": "Minutes lost when transitioning between items. Per day, a worker pays (N-1) × switch_cost in overhead, where N is items being progressed. The only multitasking tax in the model.",
-  "team.blocking_response": "What a worker does when all their items are blocked: wait, start a new one, help validate someone else's, or swarm the blocker.",
+  "team.size": "Number of generalist workers on the team. Every worker can perform any task.",
+  "team.productive_hours_per_day": "Hours per workday spent on simulated work. The default 6 reflects a realistic ratio of meetings and admin to focus time.",
+  "team.switch_cost_minutes": "Minutes lost when transitioning between items. Per day, a worker with K items pays (K-1) × switch_cost in overhead — the only multitasking tax in the model.",
 
   "work.arrival_rate_per_day": "Mean items arriving per working day, sampled from a Poisson process.",
-  "work.effort_dist.mu": "Median item effort in hours. Real cycle times are right-skewed; this is the distribution's location parameter.",
+  "work.effort_dist.mu": "Mean effort in hours. Items are log-normal distributed — positive, right-skewed, like real work.",
   "work.effort_dist.sigma": "Spread of effort in hours. Higher = more variability — short stories mixed with epics.",
-  "work.effort_dist.skewness": "Right-skew of the effort distribution. Positive values reflect realistic 'long tail' effort.",
+  "work.effort_dist.skewness": "Right-skew of the effort distribution. Positive values reflect realistic long-tail effort.",
   "work.block_probability_per_day": "Per active item, the chance per day it becomes blocked on something external (review, dependency, environment).",
 
-  "board.wip_in_progress": "Maximum items In Progress. Lower this to test the WIP-limit hypothesis.",
-  "board.wip_validation": "Maximum items in Validation. The classic QA-bottleneck lever.",
+  "board.wip_limit": "Maximum items In Progress across the whole team. Workers fill available slots eagerly.",
 
   "monte_carlo.runs": "Number of independent runs at every sweep value. More runs = tighter confidence bands.",
   "monte_carlo.master_seed": "Master seed for reproducibility. Same seed + same config = bit-identical results.",

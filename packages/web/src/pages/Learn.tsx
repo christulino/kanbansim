@@ -11,10 +11,10 @@ export function Learn() {
       <p>Lower the WIP and either throughput goes up or lead time goes down — usually both. But there's a floor: at very low WIP your team can be <em>starved</em>, sitting idle when their items are blocked. So there's a sweet spot.</p>
 
       <h2>What's in a "run"</h2>
-      <p>One run simulates 6 working months of a virtual team. Items arrive, get worked on, occasionally block, get peer-reviewed, and finish. Every numeric output you see in this simulator is averaged across thousands of independent runs of the same configuration.</p>
+      <p>One run simulates 6 working months of a virtual team. Items arrive, get pulled into In Progress, occasionally block, and complete. Every numeric output is averaged across hundreds or thousands of independent runs of the same configuration.</p>
 
       <h2>Multitasking tax</h2>
-      <p>Switching between items costs time (the <strong>switch cost</strong>) and slows down sustained pace (the <strong>pace penalty</strong>). At high WIP, workers juggle so many things that real progress evaporates. The <em>Time Accounting</em> chart makes this visible.</p>
+      <p>Switching between items costs time (the <strong>switch cost</strong>). At high WIP, workers juggle many tasks per day; the (K–1) transitions eat into productive hours. The <em>Time Accounting</em> chart makes this visible.</p>
 
       <h2>The U-curve</h2>
       <p>Sweep your WIP limit from 1 to 15 and lead time draws a U: a starved team at one end, an overloaded team at the other, and a comfortable middle. The middle isn't a single number — it's a band, broader than most teams assume. That's permission to lower WIP without precision-tuning it.</p>
