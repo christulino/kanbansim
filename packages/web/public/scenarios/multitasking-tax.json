@@ -1,11 +1,11 @@
 {
   "name": "The Multitasking Tax",
-  "description": "Switch cost swept 0 -> 60 minutes at WIP=20.",
-  "lesson": "Multitasking has a real cost; high WIP is only cheap if switching is free.",
+  "description": "Switch cost swept 0->60min at high WIP. Watch throughput erode as context-switching consumes the day.",
+  "lesson": "Multitasking is never free.",
   "config": {
-    "team": { "size": 5, "productive_hours_per_day": 6, "switch_cost_minutes": 15, "worker_pick_policy": "round_robin", "blocking_response": "start_new" },
-    "work": { "arrival_rate_per_day": 1.0, "effort_dist": { "mu": 24, "sigma": 8, "skewness": 0.5 }, "validation_effort": { "kind": "fraction", "fraction": 0.3 }, "block_probability_per_day": 0.10, "block_duration_dist": { "mu": 4, "sigma": 2, "skewness": 0.5 } },
-    "board": { "wip_in_progress": 20, "wip_validation": 5 },
+    "team": { "size": 5, "productive_hours_per_day": 6, "switch_cost_minutes": 15 },
+    "work": { "arrival_rate_per_day": 2.0, "effort_dist": { "mu": 31, "sigma": 10, "skewness": 0.5 }, "block_probability_per_day": 0.10, "block_duration_dist": { "mu": 4, "sigma": 2, "skewness": 0.5 } },
+    "board": { "wip_limit": 20 },
     "simulation": { "sim_days": 130, "tick_size_hours": 1 }
   },
   "sweep": { "variable": "team.switch_cost_minutes", "min": 0, "max": 60, "step": 5 }
