@@ -21,7 +21,7 @@ describe("metrics helpers", () => {
       arrival_tick: 0,
       done_tick: 10,
       lead_time_hours: 10,
-      blocked_hours: 0,
+      
       validation_started_tick: 5,
     }));
     const summary = computeSummary(completed, 100, 6);

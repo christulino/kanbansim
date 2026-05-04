@@ -64,7 +64,7 @@ export function createAggregator(options: AggregatorOptions = {}) {
         lead_time_samples: [],
         representative_cfd: null,
         time_accounting_totals: { hours_working: 0, hours_switching: 0, hours_blocked: 0, hours_idle: 0 },
-        column_count_sums: { backlog: 0, in_progress: 0, validation: 0, done: 0 },
+        column_count_sums: { backlog: 0, in_progress: 0, done: 0 },
         column_count_observations: 0,
         run_count: 0,
       };
@@ -85,7 +85,6 @@ export function createAggregator(options: AggregatorOptions = {}) {
     for (const snap of result.cfd) {
       cell.column_count_sums.backlog += snap.counts.backlog;
       cell.column_count_sums.in_progress += snap.counts.in_progress;
-      cell.column_count_sums.validation += snap.counts.validation;
       cell.column_count_sums.done += snap.counts.done;
       cell.column_count_observations++;
     }
@@ -121,7 +120,6 @@ export function createAggregator(options: AggregatorOptions = {}) {
         column_count_means: {
           backlog: c.column_count_sums.backlog / obs,
           in_progress: c.column_count_sums.in_progress / obs,
-          validation: c.column_count_sums.validation / obs,
           done: c.column_count_sums.done / obs,
         },
       });

@@ -1,7 +1,7 @@
 import type { ExperimentConfig } from "@kanbansim/engine";
 import type { ExperimentState, SweepSpec } from "./urlCodec.js";
 
-export type PresetId = "sweet-spot" | "qa-bottleneck" | "multitasking-tax";
+export type PresetId = "sweet-spot" | "arrival-pressure" | "multitasking-tax";
 
 type ScenarioFile = {
   name: string;
@@ -11,12 +11,12 @@ type ScenarioFile = {
   sweep?: SweepSpec;
 };
 
-export const PRESET_IDS: PresetId[] = ["sweet-spot", "qa-bottleneck", "multitasking-tax"];
+export const PRESET_IDS: PresetId[] = ["sweet-spot", "arrival-pressure", "multitasking-tax"];
 
 export const PRESET_DESCRIPTIONS: Record<PresetId, string> = {
-  "sweet-spot": "WIP swept 1 → 15. Find the optimal point on the U-curve.",
-  "qa-bottleneck": "Validation WIP swept 1 → 6. See where the team chokes when QA can't keep up.",
-  "multitasking-tax": "Switch cost swept 0 → 60 min at high WIP. Watch the team grind to a halt.",
+  "sweet-spot": "WIP swept 1 → 50. Find the optimal point on the U-curve.",
+  "arrival-pressure": "Arrival rate swept 0.2 → 4.0. See lead time explode when demand exceeds capacity.",
+  "multitasking-tax": "WIP swept 1 → 25 at 2 items/day. Weinberg's formula shows productivity collapsing as workers juggle more.",
 };
 
 export async function loadPreset(id: PresetId): Promise<ExperimentState> {

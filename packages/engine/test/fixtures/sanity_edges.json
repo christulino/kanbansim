@@ -1,13 +1,13 @@
 {
   "name": "sanity_edges",
-  "description": "Edge cases: WIP=1, WIP=null, team=1, arrivals=0. Must not crash, hang, or produce NaN.",
+  "description": "Edge cases: WIP=1, WIP=null, arrivals=0. Must not crash, hang, or produce NaN.",
   "cases": [
     {
       "name": "wip_one_single_worker",
       "config": {
-        "team": { "size": 1, "productive_hours_per_day": 6, "switch_cost_minutes": 15, "worker_pick_policy": "round_robin", "blocking_response": "wait" },
-        "work": { "arrival_rate_per_day": 1, "effort_dist": { "mu": 4, "sigma": 0, "skewness": 0 }, "validation_effort": { "kind": "fraction", "fraction": 0.3 }, "block_probability_per_day": 0, "block_duration_dist": { "mu": 2, "sigma": 1, "skewness": 0 } },
-        "board": { "wip_in_progress": 1, "wip_validation": 1 },
+        "team": { "size": 1, "productive_hours_per_day": 6 },
+        "work": { "arrival_rate_per_day": 1, "effort_dist": { "mu": 4, "sigma": 0, "skewness": 0 }, "block_probability_per_day": 0, "block_duration_dist": { "mu": 2, "sigma": 1, "skewness": 0 } },
+        "board": { "wip_limit": 1 },
         "simulation": { "sim_days": 30, "tick_size_hours": 1 }
       },
       "seed": "1"
@@ -15,9 +15,9 @@
     {
       "name": "wip_unlimited",
       "config": {
-        "team": { "size": 5, "productive_hours_per_day": 6, "switch_cost_minutes": 15, "worker_pick_policy": "round_robin", "blocking_response": "start_new" },
-        "work": { "arrival_rate_per_day": 8, "effort_dist": { "mu": 6, "sigma": 2, "skewness": 1 }, "validation_effort": { "kind": "fraction", "fraction": 0.3 }, "block_probability_per_day": 0, "block_duration_dist": { "mu": 4, "sigma": 2, "skewness": 0 } },
-        "board": { "wip_in_progress": null, "wip_validation": null },
+        "team": { "size": 5, "productive_hours_per_day": 6 },
+        "work": { "arrival_rate_per_day": 8, "effort_dist": { "mu": 6, "sigma": 2, "skewness": 1 }, "block_probability_per_day": 0, "block_duration_dist": { "mu": 4, "sigma": 2, "skewness": 0 } },
+        "board": { "wip_limit": null },
         "simulation": { "sim_days": 30, "tick_size_hours": 1 }
       },
       "seed": "2"
@@ -25,9 +25,9 @@
     {
       "name": "no_arrivals",
       "config": {
-        "team": { "size": 3, "productive_hours_per_day": 6, "switch_cost_minutes": 15, "worker_pick_policy": "round_robin", "blocking_response": "wait" },
-        "work": { "arrival_rate_per_day": 0, "effort_dist": { "mu": 4, "sigma": 1, "skewness": 0 }, "validation_effort": { "kind": "fraction", "fraction": 0.3 }, "block_probability_per_day": 0, "block_duration_dist": { "mu": 2, "sigma": 1, "skewness": 0 } },
-        "board": { "wip_in_progress": 3, "wip_validation": 2 },
+        "team": { "size": 3, "productive_hours_per_day": 6 },
+        "work": { "arrival_rate_per_day": 0, "effort_dist": { "mu": 4, "sigma": 1, "skewness": 0 }, "block_probability_per_day": 0, "block_duration_dist": { "mu": 2, "sigma": 1, "skewness": 0 } },
+        "board": { "wip_limit": 3 },
         "simulation": { "sim_days": 10, "tick_size_hours": 1 }
       },
       "seed": "3"

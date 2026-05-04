@@ -25,7 +25,7 @@ export function RunResults() {
 
   useEffect(() => {
     const params = new URLSearchParams(location.search || location.hash.split("?")[1] || "");
-    const e = params.get("e");
+    const e = params.get("e") ?? localStorage.getItem("kanbansim:last_experiment");
     if (!e) { setError("No experiment in URL. Visit /build to configure one."); return; }
     const decoded = decodeExperiment(e);
     if (!decoded) { setError("Could not parse experiment from URL."); return; }
@@ -35,6 +35,7 @@ export function RunResults() {
   useEffect(() => {
     if (!state || startedRef.current) return;
     startedRef.current = true;
+    localStorage.setItem("kanbansim:last_experiment", encodeExperiment(state));
     exp.start(state);
   }, [state, exp]);
 
@@ -117,7 +118,7 @@ export function RunResults() {
         <UCurveChart snapshot={exp.snapshot} sweep={state.sweep} productive_hours_per_day={phpd} totalRunsExpected={totalRunsExpected} />
       </ChartCard>
 
-      <ChartCard label="Board Load" title="Average Items per Column by Sweep Value" subtitle="For each sweep value, the average number of items sitting in each column over the simulated time. Tall Backlog/Ready = team is starved. Tall In Progress/Validation = work is piling up. Done is cumulative finished work." caption={<Caption kind="cfd" status={exp.status} />}>
+      <ChartCard label="Board Load" title="Average Items per Column by Sweep Value" subtitle="For each sweep value, the average number of items sitting in each column over the simulated time. Tall Backlog = team is starved. Tall In Progress = work is piling up. Done is cumulative finished work." caption={<Caption kind="cfd" status={exp.status} />}>
         <BoardLoadChart snapshot={exp.snapshot} sweep={state.sweep} />
       </ChartCard>
 

@@ -18,7 +18,7 @@ export function Landing() {
 
       <div className="preset-grid">
         <PresetCard id="sweet-spot" />
-        <PresetCard id="qa-bottleneck" />
+        <PresetCard id="arrival-pressure" />
         <PresetCard id="multitasking-tax" />
       </div>
 

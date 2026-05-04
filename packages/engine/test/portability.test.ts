@@ -3,9 +3,9 @@ import { runSimulation, type ExperimentConfig } from "../src/index.js";
 import { readFileSync } from "node:fs";
 
 const config: ExperimentConfig = {
-  team: { size: 3, productive_hours_per_day: 6, switch_cost_minutes: 15, worker_pick_policy: "round_robin", blocking_response: "start_new" },
-  work: { arrival_rate_per_day: 3, effort_dist: { mu: 6, sigma: 2, skewness: 1 }, validation_effort: { kind: "fraction", fraction: 0.3 }, block_probability_per_day: 0.04, block_duration_dist: { mu: 4, sigma: 2, skewness: 0.5 } },
-  board: { wip_ready: null, wip_in_progress: 4, wip_validation: 2 },
+  team: { size: 3, productive_hours_per_day: 6 },
+  work: { arrival_rate_per_day: 3, effort_dist: { mu: 6, sigma: 2, skewness: 1 }, block_probability_per_day: 0.04, block_duration_dist: { mu: 4, sigma: 2, skewness: 0.5 } },
+  board: { wip_limit: 4 },
   simulation: { sim_days: 60, tick_size_hours: 1 },
 };
 
@@ -14,8 +14,7 @@ describe("engine portability and purity", () => {
     const forbidden = ["node:", "from 'fs'", "from \"fs\"", "from 'path'", "from \"path\"", "self.postMessage", "window.", "document."];
     const files = [
       "src/types.ts", "src/prng.ts", "src/distributions.ts", "src/item.ts",
-      "src/board.ts", "src/multitasking.ts", "src/worker.ts", "src/events.ts",
-      "src/tick.ts", "src/metrics.ts", "src/runSimulation.ts", "src/index.ts",
+      "src/events.ts", "src/tick.ts", "src/metrics.ts", "src/runSimulation.ts", "src/index.ts",
     ];
     for (const f of files) {
       const content = readFileSync(`${import.meta.dirname}/../${f}`, "utf-8");

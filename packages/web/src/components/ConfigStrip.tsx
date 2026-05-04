@@ -22,7 +22,6 @@ export function ConfigStrip({ state }: Props) {
         <dl>
           <dt>Size</dt><dd>{val("team.size", String(config.team.size))}</dd>
           <dt>Productive hrs/day</dt><dd>{val("team.productive_hours_per_day", config.team.productive_hours_per_day.toFixed(1))}</dd>
-          <dt>Switch cost</dt><dd>{val("team.switch_cost_minutes", `${config.team.switch_cost_minutes} min`)}</dd>
         </dl>
       </div>
       <div>
@@ -37,9 +36,7 @@ export function ConfigStrip({ state }: Props) {
       <div>
         <div className="group-title">Board</div>
         <dl>
-          <dt>In Progress WIP</dt><dd>{val("board.wip_in_progress", String(config.board.wip_in_progress ?? "—"))}</dd>
-          <dt>Validation WIP</dt><dd>{val("board.wip_validation", String(config.board.wip_validation ?? "—"))}</dd>
-          <dt>Blocked policy</dt><dd>{config.team.blocking_response}</dd>
+          <dt>WIP Limit</dt><dd>{val("board.wip_limit", String(config.board.wip_limit ?? "—"))}</dd>
         </dl>
       </div>
       <div>
