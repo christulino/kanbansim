@@ -3,8 +3,8 @@
   "description": "Arrival rate swept 0.2->4.0 items/day at fixed WIP=5. See how lead time explodes when demand exceeds team capacity.",
   "lesson": "When demand outruns throughput, the backlog grows without bound.",
   "config": {
-    "team": { "size": 5, "productive_hours_per_day": 6, "switch_cost_minutes": 15 },
-    "work": { "arrival_rate_per_day": 1.0, "effort_dist": { "mu": 31, "sigma": 10, "skewness": 0.5 }, "block_probability_per_day": 0.10, "block_duration_dist": { "mu": 4, "sigma": 2, "skewness": 0.5 } },
+    "team": { "size": 5, "productive_hours_per_day": 6 },
+    "work": { "arrival_rate_per_day": 1.0, "effort_dist": { "mu": 31, "sigma": 10, "skewness": 0.5 }, "block_probability_per_day": 0.10, "block_duration_dist": { "mu": 12, "sigma": 4, "skewness": 0.5 } },
     "board": { "wip_limit": 5 },
     "simulation": { "sim_days": 130, "tick_size_hours": 1 }
   },
