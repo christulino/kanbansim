@@ -25,7 +25,7 @@ export function RunResults() {
 
   useEffect(() => {
     const params = new URLSearchParams(location.search || location.hash.split("?")[1] || "");
-    const e = params.get("e");
+    const e = params.get("e") ?? localStorage.getItem("kanbansim:last_experiment");
     if (!e) { setError("No experiment in URL. Visit /build to configure one."); return; }
     const decoded = decodeExperiment(e);
     if (!decoded) { setError("Could not parse experiment from URL."); return; }
@@ -35,6 +35,7 @@ export function RunResults() {
   useEffect(() => {
     if (!state || startedRef.current) return;
     startedRef.current = true;
+    localStorage.setItem("kanbansim:last_experiment", encodeExperiment(state));
     exp.start(state);
   }, [state, exp]);
 
