@@ -2,6 +2,7 @@ import type { ExperimentConfig, Item, Worker, ColumnId } from "./types.js";
 import type { Prng } from "./prng.js";
 import { type EventQueue, popDueEvents } from "./events.js";
 import { sampleLogNormal } from "./distributions.js";
+import { advanceItemEffort } from "./item.js";
 
 export type TickAccounting = { working: number; switching: number; blocked: number; idle: number };
 
@@ -26,6 +27,8 @@ export function processTick(args: {
   let workers = args.workers.map((w) => ({ ...w }));
 
   // 1. Resolve due events.
+  //    Arrivals flip an item's `arrived` flag so it becomes visible and pullable.
+  //    Unblocks clear the blocked state so the item resumes receiving progress.
   for (const event of popDueEvents(args.events, currentTick)) {
     if (event.kind === "arrival") {
       items = items.map((it) => (it.id === event.itemId ? { ...it, arrived: true } : it));
@@ -37,6 +40,9 @@ export function processTick(args: {
   }
 
   // 2. Sample new blocks for active in_progress items.
+  //    Each in_progress item has an independent per-tick probability of becoming blocked,
+  //    proportional to block_probability_per_day / productive_hours_per_day.
+  //    A blocked item is scheduled to unblock after a log-normal duration.
   const tickHours = config.simulation.tick_size_hours;
   const productiveHoursPerDay = config.team.productive_hours_per_day;
   const blocksPerHour = config.work.block_probability_per_day / Math.max(1, productiveHoursPerDay);
@@ -52,6 +58,8 @@ export function processTick(args: {
   }
 
   // 3. Replenishment: fill WIP to limit, FIFO from backlog, fewest-assigned worker wins each slot.
+  //    Workers are eager — they never pass up an open slot. The oldest arrived backlog item is
+  //    pulled first; the worker with the fewest current assignments receives it (lowest ID breaks ties).
   const wipLimit = config.board.wip_limit;
   while (true) {
     const inProgressCount = items.filter((it) => it.column === "in_progress").length;
@@ -73,9 +81,12 @@ export function processTick(args: {
     );
   }
 
-  // 4. Work phase: daily-amortized allocation across each worker's assigned items.
-  // Weinberg (1992): useful_fraction = 4 / (K + 3)
-  // K=1→100%, K=2→80%, K=5→50%, asymptotically→0%
+  // 4. Work phase: Weinberg daily-amortized allocation across each worker's assigned items.
+  //
+  //    A worker with K unblocked items retains 4/(K+3) of their productive capacity (Weinberg, 1992).
+  //    K=1 → 100%, K=2 → 80% total (40% each), K=5 → 50% total (10% each), K→∞ → 0% asymptotically.
+  //    That fraction is spread evenly across all K unblocked items each tick.
+  //    Blocked items are excluded from K and receive no progress.
   const accounting: Map<number, TickAccounting> = new Map(
     workers.map((w) => [w.id, { working: 0, switching: 0, blocked: 0, idle: 0 }]),
   );
@@ -87,23 +98,23 @@ export function processTick(args: {
     const K = unblocked.length;
 
     if (K === 0) {
+      // Worker has no unblocked items this tick.
       if (myItems.length > 0) {
-        acc.blocked += tickHours;
+        acc.blocked += tickHours;  // has items but all blocked — waiting on dependencies
       } else {
-        acc.idle += tickHours;
+        acc.idle += tickHours;     // no items at all — WIP limit is full, backlog is empty
       }
       continue;
     }
 
-    // Weinberg (1992): useful_fraction = 4 / (K + 3)
-    // K=1→100%, K=2→80%, K=5→50%, asymptotically→0%
-    const usefulFraction = 4 / (K + 3);
-    const perItemPerTick = (usefulFraction / K) * tickHours;
+    const usefulFraction = 4 / (K + 3);              // Weinberg: productive share of the day
+    const perItemPerTick = (usefulFraction / K) * tickHours;  // each item's share of this tick
     const tickUsefulHours = usefulFraction * tickHours;
 
+    // Apply progress to every unblocked item, capped at effort_required_hours.
     const unblockedIds = new Set(unblocked.map((it) => it.id));
     items = items.map((it) =>
-      unblockedIds.has(it.id) ? { ...it, effort_done_hours: it.effort_done_hours + perItemPerTick } : it,
+      unblockedIds.has(it.id) ? advanceItemEffort(it, perItemPerTick) : it,
     );
 
     acc.working += tickUsefulHours;

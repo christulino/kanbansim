@@ -110,8 +110,9 @@ export function Learn() {
       <h3>Time resolution and reproducibility</h3>
       <p>
         The simulation runs in 1-hour ticks. One simulated day = productive_hours_per_day ticks (default
-        6). The random number generator is a 64-bit Linear Congruential Generator seeded per run from the
-        master seed, sweep cell index, and run index. The same seed always produces bit-identical results.
+        6). The random number generator is <strong>mulberry32</strong>, a 32-bit xorshift-based generator,
+        seeded per run from the master seed, sweep cell index, and run index. The same seed always
+        produces bit-identical results.
       </p>
     </main>
   );

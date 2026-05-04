@@ -4,7 +4,6 @@ import type { RandomizedVar } from "./urlCodec.js";
 const INTEGER_PATHS = new Set<string>([
   "team.size",
   "team.productive_hours_per_day",
-  "team.switch_cost_minutes",
   "board.wip_limit",
   "simulation.sim_days",
 ]);

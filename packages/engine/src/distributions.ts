@@ -32,6 +32,8 @@ export function sampleSkewNormal(rng: Prng, spec: DistributionSpec): number {
 }
 
 // Beta-shaped sample truncated to [0, 1] — clamp the skew-normal output.
+// Useful for sampling probabilities (e.g. a randomised block_probability_per_day)
+// where the result must stay in [0, 1]. Exported for use by extenders.
 export function sampleBetaTruncated(rng: Prng, spec: DistributionSpec): number {
   let value = sampleSkewNormal(rng, spec);
   if (value < 0) value = 0;

@@ -71,7 +71,6 @@ export type RunResult = {
     arrival_tick: number;
     done_tick: number;
     lead_time_hours: number;
-    blocked_hours: number;
   }>;
   cfd: CfdSnapshot[];
   time_accounting: WorkerTimeAccounting[];

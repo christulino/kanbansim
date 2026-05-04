@@ -1,3 +1,15 @@
+// runSimulation: top-level entry point for a single Monte Carlo run.
+//
+// Design: two phases.
+//   Phase 1 — Pre-sample arrivals: all items that will ever arrive are created upfront
+//             and scheduled as events. This avoids interleaving arrival logic with the
+//             tick loop and makes the PRNG sequence fully deterministic.
+//   Phase 2 — Tick loop: advance one hour at a time, delegating all per-tick logic
+//             to processTick (blocks, replenishment, work, completions).
+//
+// Note: totalTicks assumes tick_size_hours === 1. Changing tick_size_hours without
+// updating the loop bound would silently mis-scale the simulation duration.
+
 import type {
   CfdSnapshot, ColumnId, ExperimentConfig, Item, RunResult, Worker, WorkerTimeAccounting,
 } from "./types.js";
@@ -10,9 +22,11 @@ import { computeSummary } from "./metrics.js";
 
 export function runSimulation(config: ExperimentConfig, seed: bigint): RunResult {
   const rng = createPrng(seed);
+  // totalTicks === total productive hours (assumes tick_size_hours = 1).
   const totalTicks = config.simulation.sim_days * config.team.productive_hours_per_day;
   const productiveHoursPerDay = config.team.productive_hours_per_day;
 
+  // Phase 1: pre-sample all arrivals and schedule them as events.
   const events = createEventQueue();
   const allItems: Item[] = [];
   let nextItemId = 1;
@@ -29,6 +43,7 @@ export function runSimulation(config: ExperimentConfig, seed: bigint): RunResult
     }
   }
 
+  // Phase 2: tick loop — one hour per iteration.
   let workers: Worker[] = Array.from({ length: config.team.size }, (_, i) => ({
     id: i + 1, active_item_ids: [],
   }));
@@ -53,6 +68,7 @@ export function runSimulation(config: ExperimentConfig, seed: bigint): RunResult
         a.hours_idle += acc.idle;
       }
     }
+    // CFD snapshot: count arrived items per column (pre-arrival items are hidden).
     const counts: Record<ColumnId, number> = { backlog: 0, in_progress: 0, done: 0 };
     for (const it of items) {
       if (it.arrived) counts[it.column]++;
@@ -67,7 +83,6 @@ export function runSimulation(config: ExperimentConfig, seed: bigint): RunResult
       arrival_tick: it.arrival_tick,
       done_tick: it.done_tick!,
       lead_time_hours: it.done_tick! - it.arrival_tick,
-      blocked_hours: 0,
     }));
 
   const itemsArrived = items.filter((it) => it.arrived).length;

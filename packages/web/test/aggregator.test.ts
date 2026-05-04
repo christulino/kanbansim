@@ -8,7 +8,7 @@ function makeResult(throughput: number, leadTime: number, completed = 50): RunRe
     seed: 1n,
     completed_items: Array.from({ length: completed }, (_, i) => ({
       id: i, arrival_tick: 0, done_tick: leadTime,
-      lead_time_hours: leadTime, blocked_hours: 0, validation_started_tick: null,
+      lead_time_hours: leadTime,
     })),
     cfd: [{ tick: 0, counts: { backlog: 0, in_progress: 0, done: 0 } }],
     time_accounting: [

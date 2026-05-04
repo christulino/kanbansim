@@ -7,7 +7,7 @@ export const CAPTIONS = {
   },
   cfd: {
     running: "Each bar is one sweep value. Heights reveal how items distribute across the board on average. As more runs land, the bars settle.",
-    complete: "Read the bars left-to-right: at low WIP, Backlog and Ready dominate (team is starved waiting on a tiny in-flight pool). Around the sweet spot, the In Progress / Validation bands stay short — work flows. At high WIP, In Progress swells and Done gets there slower — multitasking tax in column form.",
+    complete: "Read the bars left-to-right: at low WIP, Backlog dominates — work arrives faster than it can be started. Around the sweet spot, In Progress stays short — work flows. At high WIP, In Progress swells — the multitasking tax slows completions and work piles up.",
   },
   histogram: {
     running: "Each box is one sweep value. The middle line is the median lead time; the box covers the middle 50% of finished items; the whiskers go to the 10th and 90th percentiles. Watch the boxes settle and the whiskers stretch.",
