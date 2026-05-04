@@ -118,7 +118,7 @@ export function RunResults() {
         <UCurveChart snapshot={exp.snapshot} sweep={state.sweep} productive_hours_per_day={phpd} totalRunsExpected={totalRunsExpected} />
       </ChartCard>
 
-      <ChartCard label="Board Load" title="Average Items per Column by Sweep Value" subtitle="For each sweep value, the average number of items sitting in each column over the simulated time. Tall Backlog/Ready = team is starved. Tall In Progress/Validation = work is piling up. Done is cumulative finished work." caption={<Caption kind="cfd" status={exp.status} />}>
+      <ChartCard label="Board Load" title="Average Items per Column by Sweep Value" subtitle="For each sweep value, the average number of items sitting in each column over the simulated time. Tall Backlog = team is starved. Tall In Progress = work is piling up. Done is cumulative finished work." caption={<Caption kind="cfd" status={exp.status} />}>
         <BoardLoadChart snapshot={exp.snapshot} sweep={state.sweep} />
       </ChartCard>
 

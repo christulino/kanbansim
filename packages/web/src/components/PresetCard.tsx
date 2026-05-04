@@ -11,7 +11,7 @@ const TITLES: Record<PresetId, string> = {
 const LESSONS: Record<PresetId, string> = {
   "sweet-spot": "Little's Law made visible — find the sweet spot, see the cliffs.",
   "arrival-pressure": "Lead time explodes when demand exceeds capacity — Little's Law made brutal.",
-  "multitasking-tax": "Multitasking has a real cost. Watch the team grind to a halt.",
+  "multitasking-tax": "Past 1 item per person, Weinberg's formula cuts productivity with every new assignment. Watch the curve steepen.",
 };
 
 export function PresetCard({ id }: { id: PresetId }) {
