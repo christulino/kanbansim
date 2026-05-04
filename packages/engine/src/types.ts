@@ -11,7 +11,6 @@ export type ExperimentConfig = {
   team: {
     size: number;
     productive_hours_per_day: number;
-    switch_cost_minutes: number;
   };
   work: {
     arrival_rate_per_day: number;

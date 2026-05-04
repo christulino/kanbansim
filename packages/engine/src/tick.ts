@@ -52,7 +52,6 @@ export function processTick(args: {
   }
 
   // 3. Replenishment: fill WIP to limit, FIFO from backlog, fewest-assigned worker wins each slot.
-  const pullsByWorker = new Map<number, number>();
   const wipLimit = config.board.wip_limit;
   while (true) {
     const inProgressCount = items.filter((it) => it.column === "in_progress").length;
@@ -72,13 +71,11 @@ export function processTick(args: {
     workers = workers.map((w) =>
       w.id === worker.id ? { ...w, active_item_ids: [...w.active_item_ids, backlogItem.id] } : w,
     );
-    pullsByWorker.set(worker.id, (pullsByWorker.get(worker.id) ?? 0) + 1);
   }
 
   // 4. Work phase: daily-amortized allocation across each worker's assigned items.
-  // Workers touch every unblocked item each day; switch cost paid once per inter-item
-  // transition (K-1 per day) plus once per new item pulled this tick.
-  const switchCostHours = config.team.switch_cost_minutes / 60;
+  // Weinberg (1992): useful_fraction = 4 / (K + 3)
+  // K=1→100%, K=2→80%, K=5→50%, asymptotically→0%
   const accounting: Map<number, TickAccounting> = new Map(
     workers.map((w) => [w.id, { working: 0, switching: 0, blocked: 0, idle: 0 }]),
   );
@@ -88,7 +85,6 @@ export function processTick(args: {
     const myItems = items.filter((it) => worker.active_item_ids.includes(it.id));
     const unblocked = myItems.filter((it) => it.state === "in_column" && it.column === "in_progress");
     const K = unblocked.length;
-    const pulls = pullsByWorker.get(worker.id) ?? 0;
 
     if (K === 0) {
       if (myItems.length > 0) {
@@ -99,10 +95,11 @@ export function processTick(args: {
       continue;
     }
 
-    const dailySwitchOverhead = Math.max(0, K - 1 + pulls) * switchCostHours;
-    const dailyUsefulHours = Math.max(0, productiveHoursPerDay - dailySwitchOverhead);
-    const perItemPerTick = (dailyUsefulHours / K / productiveHoursPerDay) * tickHours;
-    const tickUsefulHours = (dailyUsefulHours / productiveHoursPerDay) * tickHours;
+    // Weinberg (1992): useful_fraction = 4 / (K + 3)
+    // K=1→100%, K=2→80%, K=5→50%, asymptotically→0%
+    const usefulFraction = 4 / (K + 3);
+    const perItemPerTick = (usefulFraction / K) * tickHours;
+    const tickUsefulHours = usefulFraction * tickHours;
 
     const unblockedIds = new Set(unblocked.map((it) => it.id));
     items = items.map((it) =>
