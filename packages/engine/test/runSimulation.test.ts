@@ -3,7 +3,7 @@ import { runSimulation } from "../src/runSimulation.js";
 import type { ExperimentConfig } from "../src/types.js";
 
 const minimalConfig: ExperimentConfig = {
-  team: { size: 2, productive_hours_per_day: 6, switch_cost_minutes: 15 },
+  team: { size: 2, productive_hours_per_day: 6 },
   work: { arrival_rate_per_day: 2, effort_dist: { mu: 4, sigma: 1, skewness: 0.5 }, block_probability_per_day: 0, block_duration_dist: { mu: 2, sigma: 1, skewness: 0 } },
   board: { wip_limit: 3 },
   simulation: { sim_days: 30, tick_size_hours: 1 },
