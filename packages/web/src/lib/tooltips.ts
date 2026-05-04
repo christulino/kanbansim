@@ -1,7 +1,6 @@
 export const TOOLTIPS: Record<string, string> = {
   "team.size": "Number of generalist workers on the team. Every worker can perform any task.",
   "team.productive_hours_per_day": "Hours per workday spent on simulated work. The default 6 reflects a realistic ratio of meetings and admin to focus time.",
-  "team.switch_cost_minutes": "Minutes lost when transitioning between items. Per day, a worker with K items pays (K-1) × switch_cost in overhead — the only multitasking tax in the model.",
 
   "work.arrival_rate_per_day": "Mean items arriving per working day, sampled from a Poisson process.",
   "work.effort_dist.mu": "Mean effort in hours. Items are log-normal distributed — positive, right-skewed, like real work.",
